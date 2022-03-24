@@ -23,3 +23,5 @@ fun String.parseToLoc(): Location? {
     val pitch = split[5].toFloatOrNull() ?: return null
     return Location(world, x, y, z, yaw, pitch)
 }
+
+fun String.replaceAllSpace() = replace(" ", "")

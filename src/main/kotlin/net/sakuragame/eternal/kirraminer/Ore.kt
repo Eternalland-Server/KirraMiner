@@ -9,7 +9,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
         companion object {
 
             fun fromString(str: String): IntInterval? {
-                val split = str.split("-")
+                val split = str.replaceAllSpace().split("-")
                 if (split.size != 2) return null
                 return IntInterval(split[0].toIntOrNull() ?: return null, split[1].toIntOrNull() ?: return null)
             }
@@ -22,7 +22,19 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
 
     data class DigMetadata(val weight: Int, val digLevel: Int, val digTime: Int, val digResult: DigResult) {
 
-        data class DigResult(val itemId: String, val amount: IntInterval)
+        data class DigResult(val itemId: String, val amount: IntInterval) {
+
+            companion object {
+
+                fun fromString(str: String): DigResult? {
+                    val split = str.replaceAllSpace().split(",")
+                    if (split.size != 2) return null
+                    return DigResult(split[0], IntInterval.fromString(split[1]) ?: return null)
+                }
+            }
+
+            override fun toString() = "$itemId, $amount"
+        }
     }
 
     data class DigState(var isDigging: Boolean, var isRefreshing: Boolean)
