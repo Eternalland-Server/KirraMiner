@@ -16,7 +16,7 @@ object KirraMinerAPI {
 
     val ores = mutableMapOf<String, Ore>()
 
-    val oreMetadata = mutableMapOf<String, List<DigMetadata>>()
+    val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
 
     // 回收所有矿物实体.
     fun recycleAllMineEntities() {
@@ -31,7 +31,7 @@ object KirraMinerAPI {
 
     // 根据字符串 (ID) 来获取权重挖掘元数据.
     fun getWeightRandomMetadataByString(str: String): DigMetadata? {
-        val metadataList = oreMetadata[str] ?: return null
+        val metadataList = oreMetadataMap[str] ?: return null
         val weightList = RandomList<DigMetadata>()
         metadataList.forEach {
             weightList.add(it, it.weight)

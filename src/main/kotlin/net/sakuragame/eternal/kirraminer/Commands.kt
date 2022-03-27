@@ -23,7 +23,7 @@ object Commands {
 
     @CommandBody
     val add = subCommand {
-        dynamic(commit = "oreId") {
+        dynamic(commit = "oreID") {
             dynamic(commit = "refreshTime") {
                 execute<Player> { player, context, _ ->
                     val oreId = context.get(1)
@@ -35,6 +35,14 @@ object Commands {
                     Loader.addOre(oreId, player.location, refreshTime)
                 }
             }
+        }
+    }
+
+    @CommandBody
+    val list = subCommand {
+        execute<CommandSender> { sender, _, _ ->
+            sender.sendMessage("&c[System] &7当前矿物列表.")
+            sender.sendMessage("&c[System] &7${KirraMinerAPI.ores.keys}")
         }
     }
 }

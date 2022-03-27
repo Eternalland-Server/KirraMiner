@@ -12,9 +12,13 @@ import java.util.UUID
 
 data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, val digMetadata: DigMetadata, val digState: DigState) {
 
-    fun init() {
-        digState.entity = KirraMinerAPI.generateOreEntity(digMetadata.name, loc)
-
+    private fun init() {
+        val currentEntity = digState.entity
+        if (currentEntity != null) {
+            currentEntity.remove()
+            digState.entity = null
+        }
+        digState.entity = KirraMinerAPI.generateOreEntity(digMetadata.digEntityName.idle, loc)
     }
 
     fun dig(player: Player) {
@@ -26,6 +30,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
         digState.isRefreshing = false
         digState.futureRefreshMillis = System.currentTimeMillis()
         init()
+        printToConsole("刷新完毕.")
     }
 
     companion object {
@@ -42,6 +47,6 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
             }
         }
 
-        fun getOreByEntityUUID(uuid: UUID) = KirraMinerAPI.ores.values.firstOrNull { uuid.equals(it.digMetadata.name) }
+        fun getOreByEntityUUID(uuid: UUID) = KirraMinerAPI.ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
     }
 }

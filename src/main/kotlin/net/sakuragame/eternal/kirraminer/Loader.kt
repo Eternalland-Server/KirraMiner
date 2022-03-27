@@ -1,9 +1,6 @@
 package net.sakuragame.eternal.kirraminer
 
-import net.sakuragame.eternal.kirraminer.ore.DigMetadata
-import net.sakuragame.eternal.kirraminer.ore.DigResult
-import net.sakuragame.eternal.kirraminer.ore.DigState
-import net.sakuragame.eternal.kirraminer.ore.Ore
+import net.sakuragame.eternal.kirraminer.ore.*
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
 import org.bukkit.Location
 import taboolib.common.LifeCycle
@@ -20,7 +17,7 @@ object Loader {
         printToConsole("-- 正在加载矿物信息.")
         KirraMinerAPI.recycleAllMineEntities()
         KirraMinerAPI.ores.clear()
-        KirraMinerAPI.oreMetadata.clear()
+        KirraMinerAPI.oreMetadataMap.clear()
         KirraMiner.oresFile.getKeys(false).forEach {
             val digMetadataList = mutableListOf<DigMetadata>()
             val loc = KirraMiner.oresFile.getLocation("$it.loc")?.toBukkitLocation() ?: return@forEach
@@ -28,14 +25,19 @@ object Loader {
             val metadataSection = KirraMiner.oresFile.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
                 val weight = KirraMiner.oresFile.getInt("$it.metadata-list.$section.weight")
-                val name = KirraMiner.oresFile.getString("$it.metadata-list.$section.name") ?: return@metaForeach
+                val idleName = KirraMiner.oresFile.getString("$it.metadata-list.$section.idle-name") ?: return@metaForeach
+                val afterName = KirraMiner.oresFile.getString("$it.metadata-list.$section.after-name") ?: return@metaForeach
                 val digLevel = KirraMiner.oresFile.getInt("$it.metadata-list.$section.dig-level")
                 val digTime = KirraMiner.oresFile.getInt("$it.metadata-list.$section.dig-time")
                 val digResult = DigResult.fromString(KirraMiner.oresFile.getString("$it.metadata-list.$section.dig-result") ?: return@metaForeach) ?: return@metaForeach
-                digMetadataList += DigMetadata(weight, name, digLevel, digTime, digResult)
+                val digEntityName = DigEntityName(idleName, afterName)
+                digMetadataList += DigMetadata(weight, digEntityName, digLevel, digTime, digResult)
             }
-            KirraMinerAPI.oreMetadata[it] = digMetadataList
-            KirraMinerAPI.ores[it] = Ore(it, loc, refreshTime, KirraMinerAPI.getWeightRandomMetadataByString(it) ?: return@forEach, DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis()))
+            KirraMinerAPI.oreMetadataMap[it] = digMetadataList
+            val randomMeta = KirraMinerAPI.getWeightRandomMetadataByString(it) ?: return@forEach
+            KirraMinerAPI.ores[it] = Ore(it, loc, refreshTime, randomMeta, DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())).apply {
+                refresh()
+            }
         }
         printToConsole("-- 加载完毕, 一共加载了 ${KirraMinerAPI.ores.size} 个矿物.")
     }
