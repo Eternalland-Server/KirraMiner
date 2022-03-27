@@ -19,10 +19,18 @@ object KirraMiner : Plugin() {
     }
 
     val oresFile by lazy {
-        val file = File(plugin.dataFolder, "coords.yml")
+        val file = File(plugin.dataFolder, "ores.yml")
         if (!file.exists()) {
             file.createNewFile()
         }
         Configuration.loadFromFile(file)
+    }
+
+    override fun onEnable() {
+        KirraMinerAPI.recycleAllMineEntities()
+    }
+
+    override fun onDisable() {
+        KirraMinerAPI.recycleAllMineEntities()
     }
 }
