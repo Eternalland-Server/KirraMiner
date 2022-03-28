@@ -10,6 +10,7 @@ taboolib {
     install("module-lang")
     install("module-configuration")
     install("module-chat")
+    install("module-nms", "module-nms-util")
     install("platform-bukkit")
     install("expansion-command-helper")
     install("module-database")
@@ -18,10 +19,19 @@ taboolib {
 }
 
 repositories {
+    maven {
+        credentials {
+            username = "a5phyxia"
+            password = "zxzbc13456"
+        }
+        url = uri("https://maven.ycraft.cn/repository/maven-snapshots/")
+    }
     mavenCentral()
 }
 
 dependencies {
+    compileOnly("ink.ptms:Zaphkiel:1.7.6@jar")
+    compileOnly("net.sakuragame.eternal:JustMessage:1.0.4-SNAPSHOT@jar")
     compileOnly("ink.ptms.core:v11200:11200-minimize@jar")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
