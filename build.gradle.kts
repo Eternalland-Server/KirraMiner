@@ -5,6 +5,13 @@ plugins {
 }
 
 taboolib {
+    description {
+        dependencies {
+            @Suppress("SpellCheckingInspection")
+            name("Zaphkiel")
+            name("JustMessage")
+        }
+    }
     install("common")
     install("common-5")
     install("module-lang")
@@ -15,7 +22,7 @@ taboolib {
     install("expansion-command-helper")
     install("module-database")
     classifier = null
-    version = "6.0.7-44"
+    version = "6.0.7-50"
 }
 
 repositories {

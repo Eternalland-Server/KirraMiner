@@ -1,5 +1,6 @@
 package net.sakuragame.eternal.kirraminer
 
+import net.sakuragame.eternal.kirraminer.function.FunctionDigListener
 import net.sakuragame.eternal.kirraminer.ore.*
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
 import org.bukkit.Location
@@ -12,9 +13,10 @@ import taboolib.platform.util.toBukkitLocation
 
 object Loader {
 
-    @Awake(LifeCycle.ENABLE)
+    @Awake(LifeCycle.ACTIVE)
     fun i() {
         printToConsole("-- 正在加载矿物信息.")
+        FunctionDigListener.baffle.reset()
         KirraMinerAPI.recycleAllMineEntities()
         KirraMinerAPI.ores.clear()
         KirraMinerAPI.oreMetadataMap.clear()
@@ -25,8 +27,8 @@ object Loader {
             val metadataSection = KirraMiner.oresFile.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
                 val weight = KirraMiner.oresFile.getInt("$it.metadata-list.$section.weight")
-                val idleName = KirraMiner.oresFile.getString("$it.metadata-list.$section.idle-name") ?: return@metaForeach
-                val afterName = KirraMiner.oresFile.getString("$it.metadata-list.$section.after-name") ?: return@metaForeach
+                val idleName = KirraMiner.oresFile.getString("$it.metadata-list.$section.name.idle") ?: return@metaForeach
+                val afterName = KirraMiner.oresFile.getString("$it.metadata-list.$section.name.after") ?: return@metaForeach
                 val digLevel = KirraMiner.oresFile.getInt("$it.metadata-list.$section.dig-level")
                 val digTime = KirraMiner.oresFile.getInt("$it.metadata-list.$section.dig-time")
                 val digResult = DigResult.fromString(KirraMiner.oresFile.getString("$it.metadata-list.$section.dig-result") ?: return@metaForeach) ?: return@metaForeach
@@ -43,15 +45,20 @@ object Loader {
     }
 
     fun addOre(id: String, loc: Location, refreshTime: IntInterval) {
-        KirraMiner.oresFile.setLocation("$id.loc", adaptLocation(loc))
+        setLoc(id, loc)
         KirraMiner.oresFile["$id.refresh-time"] = refreshTime.toString()
         // 填充默认元数据模板.
         KirraMiner.oresFile["$id.metadata-list.example-item.weight"] = 10
-        KirraMiner.oresFile["$id.metadata-list-example-item.name"] = "测试矿物."
+        KirraMiner.oresFile["$id.metadata-list.example-item.name.idle"] = "铁矿"
+        KirraMiner.oresFile["$id.metadata-list.example-item.name.after"] = "铁矿"
         KirraMiner.oresFile["$id.metadata-list.example-item.dig-level"] = 1
         KirraMiner.oresFile["$id.metadata-list.example-item.dig-time"] = 10
         KirraMiner.oresFile["$id.metadata-list.example-item.dig-result"] = "ExampleItem, 4-8"
         KirraMiner.oresFile.saveToFile(KirraMiner.oresFile.file)
         i()
+    }
+
+    fun setLoc(id: String, loc: Location) {
+        KirraMiner.oresFile.setLocation("$id.loc", adaptLocation(loc))
     }
 }

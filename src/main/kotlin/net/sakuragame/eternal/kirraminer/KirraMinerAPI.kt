@@ -8,6 +8,7 @@ import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common5.RandomList
+import taboolib.module.chat.colored
 import java.util.*
 
 @Suppress("SpellCheckingInspection")
@@ -25,7 +26,7 @@ object KirraMinerAPI {
      * @param uuid 生物 UUID
      * @return 矿物实例.
      */
-    fun getOreByEntityUUID(uuid: UUID) = KirraMinerAPI.ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
+    fun getOreByEntityUUID(uuid: UUID) = ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
 
     /**
      * 回收所有的矿物实体.
@@ -64,10 +65,9 @@ object KirraMinerAPI {
      */
     fun generateOreEntity(name: String, loc: Location): ArmorStand {
         val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
+            it.isGlowing = true
             it.setGravity(false)
-            it.isMarker = true
-            it.customName = name
-            it.isCustomNameVisible = false
+            it.customName = "&r$name".colored()
             it.setMetadata(MINE_ENTITY_IDENTIFIER, FixedMetadataValue(KirraMiner.plugin, ""))
         }
         return armorStand

@@ -2,13 +2,16 @@ package net.sakuragame.eternal.kirraminer
 
 import ink.ptms.zaphkiel.ZaphkielAPI
 import net.minecraft.server.v1_12_R1.PacketPlayOutAnimation
+import net.minecraft.server.v1_12_R1.PacketPlayOutCollect
 import net.sakuragame.eternal.justmessage.api.MessageAPI
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import taboolib.module.nms.sendPacket
+import taboolib.platform.util.giveItem
 import taboolib.platform.util.isAir
 
 fun getPickaxeLevel(player: Player): Int? {
@@ -30,8 +33,13 @@ fun String.splitIgnoreAllSpaces(symbol: String) = replace(" ", "").split(symbol)
 
 fun Player.sendActionMessage(str: String) = MessageAPI.sendActionTip(player, str)
 
+fun Player.collectItem(item: Item) {
+    sendPacket(PacketPlayOutCollect(item.entityId, player.entityId, item.itemStack.amount))
+    player.giveItem(item.itemStack)
+}
+
 fun Player.swingHand() {
-    sendPacket(PacketPlayOutAnimation((player as CraftPlayer).handle, 3))
+    sendPacket(PacketPlayOutAnimation((player as CraftPlayer).handle, 0))
 }
 
 fun <T : Entity> getTargetedEntity(player: Player, entities: List<T>): T? {
