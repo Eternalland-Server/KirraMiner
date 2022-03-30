@@ -10,6 +10,7 @@ taboolib {
             @Suppress("SpellCheckingInspection")
             name("Zaphkiel")
             name("JustMessage")
+            name("TrHologram")
         }
     }
     install("common")
@@ -39,7 +40,7 @@ repositories {
 dependencies {
     compileOnly("ink.ptms:Zaphkiel:1.7.6@jar")
     compileOnly("net.sakuragame.eternal:JustMessage:1.0.4-SNAPSHOT@jar")
-    compileOnly("ink.ptms.core:v11200:11200-minimize@jar")
+    compileOnly("ink.ptms.core:v11200:11200@jar")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
 }

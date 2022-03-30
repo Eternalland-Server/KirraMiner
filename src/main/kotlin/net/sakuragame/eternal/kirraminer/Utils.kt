@@ -4,6 +4,7 @@ import ink.ptms.zaphkiel.ZaphkielAPI
 import net.minecraft.server.v1_12_R1.PacketPlayOutAnimation
 import net.minecraft.server.v1_12_R1.PacketPlayOutCollect
 import net.sakuragame.eternal.justmessage.api.MessageAPI
+import org.apache.commons.lang3.time.DateFormatUtils
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer
@@ -13,6 +14,10 @@ import org.bukkit.entity.Player
 import taboolib.module.nms.sendPacket
 import taboolib.platform.util.giveItem
 import taboolib.platform.util.isAir
+
+fun getTextureDate(date: Long): String {
+    return DateFormatUtils.format(date, "HH:mm:ss")
+}
 
 fun getPickaxeLevel(player: Player): Int? {
     val item = player.inventory.itemInMainHand
@@ -42,6 +47,7 @@ fun Player.swingHand() {
     sendPacket(PacketPlayOutAnimation((player as CraftPlayer).handle, 0))
 }
 
+// copied from random project, it works, and don't touch it.
 fun <T : Entity> getTargetedEntity(player: Player, entities: List<T>): T? {
     var target: T? = null
     val threshold = 1.0

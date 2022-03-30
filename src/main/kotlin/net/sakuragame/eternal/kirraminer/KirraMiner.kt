@@ -29,10 +29,10 @@ object KirraMiner : Plugin() {
         }
 
     override fun onEnable() {
-        KirraMinerAPI.recycleAllMineEntities()
+        KirraMinerAPI.recycleAllOres()
     }
 
     override fun onDisable() {
-        KirraMinerAPI.recycleAllMineEntities()
+        KirraMinerAPI.recycleAllOres()
     }
 }

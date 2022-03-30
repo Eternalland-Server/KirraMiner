@@ -1,12 +1,10 @@
 package net.sakuragame.eternal.kirraminer.function
 
 import net.sakuragame.eternal.kirraminer.KirraMinerAPI
+import net.sakuragame.eternal.kirraminer.Profile.Companion.profile
 import net.sakuragame.eternal.kirraminer.getPickaxeLevel
 import net.sakuragame.eternal.kirraminer.sendActionMessage
-import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
-import org.bukkit.event.player.PlayerInteractEntityEvent
-import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.inventory.EquipmentSlot
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common5.Baffle
@@ -25,7 +23,11 @@ object FunctionDigListener {
             return
         }
         val player = e.player
+        val profile = player.profile() ?: return
         val ore = KirraMinerAPI.getOreByEntityUUID(e.rightClicked.uniqueId) ?: return
+        if (ore.id == profile.diggingOreId) {
+            return
+        }
         if (!baffle.hasNext(player.name)) {
             return
         }
@@ -33,7 +35,7 @@ object FunctionDigListener {
         if (ore.digState.isRefreshing || ore.digState.isDigging) {
             return when {
                 ore.digState.isRefreshing -> player.sendActionMessage(player.asLangText("message-player-ore-refreshing"))
-                ore.digState.isDigging -> player.sendActionMessage(player.asLangText("message-player-ore-digging"))
+                ore.digState.isDigging -> player.sendActionMessage(player.asLangText("message-player-ore-digging-by-other"))
                 else -> return
             }
         }
@@ -42,6 +44,6 @@ object FunctionDigListener {
             player.sendActionMessage(player.asLangText("message-player-pickaxe-level-insufficient"))
             return
         }
-        ore.dig(player)
+        ore.dig(player, profile)
     }
 }

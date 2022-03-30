@@ -1,14 +1,18 @@
 package net.sakuragame.eternal.kirraminer
 
+import me.arasple.mc.trhologram.api.TrHologramAPI
+import me.arasple.mc.trhologram.module.display.Hologram
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.Ore
+import net.sakuragame.eternal.kirraminer.ore.OreState
+import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
+import taboolib.module.chat.uncolored
 import java.util.*
 
 @Suppress("SpellCheckingInspection")
@@ -17,6 +21,8 @@ object KirraMinerAPI {
     private const val MINE_ENTITY_IDENTIFIER = "KIRRAMINER_ENTITY"
 
     val ores = mutableMapOf<String, Ore>()
+
+    val hologramMap = mutableMapOf<String, Hologram>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
 
@@ -29,9 +35,9 @@ object KirraMinerAPI {
     fun getOreByEntityUUID(uuid: UUID) = ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
 
     /**
-     * 回收所有的矿物实体.
+     * 回收所有的矿物实体, 包括全息字.
      */
-    fun recycleAllMineEntities() {
+    fun recycleAllOres() {
         Bukkit.getWorlds().map { it.entities }.forEach {
             it.forEach { entity ->
                 if (entity is ArmorStand && entity.hasMetadata(MINE_ENTITY_IDENTIFIER)) {
@@ -39,16 +45,20 @@ object KirraMinerAPI {
                 }
             }
         }
+        hologramMap.values.forEach {
+            it.destroy()
+        }
+        hologramMap.clear()
     }
 
     /**
-     * 根据字符串 (ID) 来获取权重挖掘元数据.
+     * 根据 ID 来获取权重挖掘元数据.
      *
-     * @param str 字符串
+     * @param id 字符串
      * @return 挖掘元数据.
      */
-    fun getWeightRandomMetadataByString(str: String): DigMetadata? {
-        val metadataList = oreMetadataMap[str] ?: return null
+    fun getWeightRandomMetadataByID(id: String): DigMetadata? {
+        val metadataList = oreMetadataMap[id] ?: return null
         val weightList = RandomList<DigMetadata>()
         metadataList.forEach {
             weightList.add(it, it.weight)
@@ -56,20 +66,70 @@ object KirraMinerAPI {
         return weightList.random()
     }
 
+    fun generateHologram(ore: Ore, state: OreState, profile: Profile?) {
+        val resultItem = ore.digMetadata.digResult.getResultItem(null)!!.apply {
+            amount = 1
+        }
+        if (hologramMap[ore.id] != null) {
+            val hologram = hologramMap[ore.id]!!
+            hologram.destroy()
+            hologramMap -= ore.id
+        }
+        hologramMap[ore.id] = when (state) {
+            IDLE -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 3.4, 0.0))
+                .append({
+                    resultItem
+                })
+                .append("&f&l${ore.digMetadata.digEntityName.idle}".colored())
+                .append("&7矿镐要求等级: &f${ore.digMetadata.digLevel}".colored())
+                .append(" ")
+                .append("&7掉落物品: ".colored())
+                .append("&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})".colored())
+                .build()
+            DIGGING -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.5, 0.0))
+                .append({
+                    resultItem
+                })
+                .append("&7正在收集... &f[${profile!!.player.name}]".colored())
+                .append("&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored())
+                .build()
+            COOLDOWN -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.0, 0.0))
+                .append({
+                    resultItem
+                })
+                .append("&7正在冷却.".colored())
+                .append("&7将在 &f${getTextureDate(ore.digState.futureRefreshMillis)} &7刷新.".colored())
+                .append(" ")
+                .build()
+            FINAL -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.4, 0.0))
+                .append({
+                    resultItem
+                })
+                .append("&7挖掘完成! &a&l✓".colored())
+                .append(" ")
+                .build()
+        }.apply {
+            Bukkit.getOnlinePlayers().forEach {
+                refreshVisibility(it)
+            }
+        }
+    }
+
     /**
      * 生成一个矿物实体.
      *
-     * @param name 实体名.
-     * @param loc 实体坐标.
+     * @param ore 矿物实例.
      * @return 实体实例.
      */
-    fun generateOreEntity(name: String, loc: Location): ArmorStand {
+    fun generateOreEntity(ore: Ore, state: OreState): ArmorStand {
+        val loc = ore.loc
         val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
             it.isGlowing = true
             it.setGravity(false)
-            it.customName = "&r$name".colored()
+            it.customName = "&r${state.getString(ore)}".colored()
             it.setMetadata(MINE_ENTITY_IDENTIFIER, FixedMetadataValue(KirraMiner.plugin, ""))
         }
+        generateHologram(ore, state, null)
         return armorStand
     }
 }

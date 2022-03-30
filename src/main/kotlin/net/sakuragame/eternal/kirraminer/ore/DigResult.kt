@@ -5,7 +5,6 @@ import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
 import net.sakuragame.eternal.kirraminer.splitIgnoreAllSpaces
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import taboolib.platform.util.giveItem
 
 data class DigResult(val itemId: String, val amount: IntInterval) {
 
@@ -18,7 +17,7 @@ data class DigResult(val itemId: String, val amount: IntInterval) {
         }
     }
 
-    fun getResultItem(player: Player): ItemStack? {
+    fun getResultItem(player: Player?): ItemStack? {
         val itemStream = ZaphkielAPI.getItem(itemId) ?: return null
         val itemStack = itemStream.rebuildToItemStack(player).also {
             it.amount = amount.random

@@ -1,13 +1,21 @@
 package net.sakuragame.eternal.kirraminer
 
+import net.sakuragame.eternal.kirraminer.ore.Ore
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerKickEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent
+import taboolib.common5.util.createBar
 
 class Profile(val player: Player) {
+
+    var isDigging = false
+
+    var digTime = 0.0
+
+    var diggingOreId: String? = null
 
     companion object {
 
@@ -39,5 +47,25 @@ class Profile(val player: Player) {
 
     fun drop() {
         profiles -= player.name
+    }
+
+    fun startDigging(ore: Ore) {
+        isDigging = true
+        diggingOreId = ore.id
+    }
+
+    fun reset() {
+        digTime = 0.0
+        diggingOreId = null
+        isDigging = false
+    }
+
+    fun getDiggingProgressBar(): String? {
+        if (!isDigging) {
+            return null
+        }
+        val ore = KirraMinerAPI.ores[diggingOreId] ?: return null
+        val max = ore.digMetadata.digTime
+        return createBar("&7|", "&a|", 20, digTime / max.toDouble())
     }
 }

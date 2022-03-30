@@ -17,7 +17,7 @@ object Loader {
     fun i() {
         printToConsole("-- 正在加载矿物信息.")
         FunctionDigListener.baffle.reset()
-        KirraMinerAPI.recycleAllMineEntities()
+        KirraMinerAPI.recycleAllOres()
         KirraMinerAPI.ores.clear()
         KirraMinerAPI.oreMetadataMap.clear()
         KirraMiner.oresFile.getKeys(false).forEach {
@@ -36,7 +36,7 @@ object Loader {
                 digMetadataList += DigMetadata(weight, digEntityName, digLevel, digTime, digResult)
             }
             KirraMinerAPI.oreMetadataMap[it] = digMetadataList
-            val randomMeta = KirraMinerAPI.getWeightRandomMetadataByString(it) ?: return@forEach
+            val randomMeta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
             KirraMinerAPI.ores[it] = Ore(it, loc, refreshTime, randomMeta, DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())).apply {
                 refresh()
             }
