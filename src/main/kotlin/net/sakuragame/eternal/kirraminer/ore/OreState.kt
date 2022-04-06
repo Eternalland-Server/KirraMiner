@@ -1,8 +1,8 @@
-@file:Suppress("SpellCheckingInspection")
-
 package net.sakuragame.eternal.kirraminer.ore
 
+@Suppress("SpellCheckingInspection")
 enum class OreState {
+
     IDLE, DIGGING, COOLDOWN, FINAL;
 
     fun getString(ore: Ore): String {

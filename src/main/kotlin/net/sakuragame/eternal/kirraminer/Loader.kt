@@ -7,6 +7,7 @@ import org.bukkit.Location
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.adaptLocation
+import taboolib.module.configuration.Configuration
 import taboolib.module.configuration.util.getLocation
 import taboolib.module.configuration.util.setLocation
 import taboolib.platform.util.toBukkitLocation
@@ -22,7 +23,8 @@ object Loader {
         KirraMinerAPI.oreMetadataMap.clear()
         KirraMiner.oresFile.getKeys(false).forEach {
             val digMetadataList = mutableListOf<DigMetadata>()
-            val loc = KirraMiner.oresFile.getLocation("$it.loc")?.toBukkitLocation() ?: return@forEach
+            val oreLoc = KirraMiner.oresFile.getOreLoc("$it.ore-loc") ?: return@forEach
+            val loc = KirraMinerAPI.getRandomLocBetween2Loc(oreLoc.a, oreLoc.b, oreLoc.yLimit)
             val refreshTime = IntInterval.fromString(KirraMiner.oresFile.getString("$it.refresh-time") ?: return@forEach) ?: return@forEach
             val metadataSection = KirraMiner.oresFile.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
@@ -45,7 +47,7 @@ object Loader {
     }
 
     fun addOre(id: String, loc: Location, refreshTime: IntInterval) {
-        setLoc(id, loc)
+        setLoc(id, OreLocation(loc, loc, 20))
         KirraMiner.oresFile["$id.refresh-time"] = refreshTime.toString()
         // 填充默认元数据模板.
         KirraMiner.oresFile["$id.metadata-list.example-item.weight"] = 10
@@ -58,7 +60,16 @@ object Loader {
         i()
     }
 
-    fun setLoc(id: String, loc: Location) {
-        KirraMiner.oresFile.setLocation("$id.loc", adaptLocation(loc))
+    private fun Configuration.getOreLoc(path: String): OreLocation? {
+        val locA = getLocation("$path.a")?.toBukkitLocation() ?: return null
+        val locB = getLocation("$path.b")?.toBukkitLocation() ?: return null
+        val yLimit = getInt("$path.y-limit")
+        return OreLocation(locA, locB, yLimit)
+    }
+
+    fun setLoc(id: String, oreLoc: OreLocation) {
+        KirraMiner.oresFile.setLocation("$id.ore-loc.a", adaptLocation(oreLoc.a))
+        KirraMiner.oresFile.setLocation("$id.ore-loc.b", adaptLocation(oreLoc.b))
+        KirraMiner.oresFile["$id.ore-loc.y-limit"] = oreLoc.yLimit
     }
 }

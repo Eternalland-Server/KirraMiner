@@ -11,7 +11,7 @@ import taboolib.common5.util.createBar
 
 class Profile(val player: Player) {
 
-    var isDigging = false
+    private var isDigging = false
 
     var digTime = 0.0
 

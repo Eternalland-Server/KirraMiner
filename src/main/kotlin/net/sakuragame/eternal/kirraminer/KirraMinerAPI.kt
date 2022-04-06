@@ -7,6 +7,8 @@ import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
 import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import org.bukkit.Bukkit
+import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
@@ -14,6 +16,8 @@ import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.module.chat.uncolored
 import java.util.*
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.math.abs
 
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
@@ -25,6 +29,43 @@ object KirraMinerAPI {
     val hologramMap = mutableMapOf<String, Hologram>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
+
+    /**
+     * 获取两个坐标之间的随机坐标.
+     * @param locA 坐标 A.
+     * @param locB 坐标 B.
+     * @param yLimit 坐标 Y 轴限制.
+     * @return 随机坐标.
+     */
+    fun getRandomLocBetween2Loc(locA: Location, locB: Location, yLimit: Int): Location {
+        return getRandomLocBetween2Loc(locA, locB, yLimit, 0)
+    }
+
+    private fun getRandomLocBetween2Loc(locA: Location, locB: Location, yLimit: Int, counts: Int): Location {
+        val world = locA.world
+
+        if (counts > 5) {
+            error("获取随机坐标失败.")
+        }
+
+        val minX = locB.x.coerceAtMost(locA.x)
+        val minZ = locB.z.coerceAtMost(locA.z)
+
+        val maxX = locB.x.coerceAtLeast(locA.x)
+        val maxZ = locB.z.coerceAtLeast(locA.z)
+
+        val loc = Location(world, getRandomDouble(minX, maxX), getRandomDouble(yLimit.toDouble(), yLimit.toDouble()), getRandomDouble(minZ, maxZ))
+
+        if (loc.block.type != Material.AIR) {
+            return getRandomLocBetween2Loc(loc, locB, yLimit, counts + 1)
+        }
+
+        return loc
+    }
+
+    private fun getRandomDouble(min: Double, max: Double): Double {
+        return min + ThreadLocalRandom.current().nextDouble(abs(max - min + 1))
+    }
 
     /**
      * 根据生物 UUID 获取相应的矿物实例.
@@ -54,7 +95,7 @@ object KirraMinerAPI {
     /**
      * 根据 ID 来获取权重挖掘元数据.
      *
-     * @param id 字符串
+     * @param id 字符串.
      * @return 挖掘元数据.
      */
     fun getWeightRandomMetadataByID(id: String): DigMetadata? {
@@ -66,6 +107,12 @@ object KirraMinerAPI {
         return weightList.random()
     }
 
+    /**
+     * 生成全息实体.
+     * @param ore 矿物实例.
+     * @param state 矿物状态.
+     * @param profile 玩家档案.
+     */
     fun generateHologram(ore: Ore, state: OreState, profile: Profile?) {
         val resultItem = ore.digMetadata.digResult.getResultItem(null)!!.apply {
             amount = 1

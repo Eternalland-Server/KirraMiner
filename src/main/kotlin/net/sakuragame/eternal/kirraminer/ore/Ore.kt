@@ -127,7 +127,9 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
                     .filter { it.digState.isRefreshing }
                     .filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }
                     .forEach {
-                        it.refresh()
+                        submit(async = false) {
+                            it.refresh()
+                        }
                     }
             }
         }
