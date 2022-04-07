@@ -22,13 +22,18 @@ import kotlin.math.abs
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
 
-    private const val MINE_ENTITY_IDENTIFIER = "KIRRAMINER_ENTITY"
+    const val MINE_ENTITY_IDENTIFIER = "KIRRAMINER_ENTITY"
 
     val ores = mutableMapOf<String, Ore>()
 
     val hologramMap = mutableMapOf<String, Hologram>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
+
+    val defaultYLimit: Int
+        get() {
+            return KirraMiner.conf.getInt("settings.default-y-limit")
+        }
 
     /**
      * 获取两个坐标之间的随机坐标.

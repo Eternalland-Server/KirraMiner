@@ -70,6 +70,6 @@ object Loader {
     fun setLoc(id: String, oreLoc: OreLocation) {
         KirraMiner.oresFile.setLocation("$id.ore-loc.a", adaptLocation(oreLoc.a))
         KirraMiner.oresFile.setLocation("$id.ore-loc.b", adaptLocation(oreLoc.b))
-        KirraMiner.oresFile["$id.ore-loc.y-limit"] = oreLoc.yLimit
+        KirraMiner.oresFile["$id.ore-loc.y-limit"] = KirraMinerAPI.defaultYLimit
     }
 }

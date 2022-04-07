@@ -24,6 +24,8 @@ object Commands {
     val reload = subCommand {
         execute<CommandSender> { sender, _, _ ->
             sender.sendMessage("&c[System] &7正在重载...".colored())
+            KirraMiner.conf.reload()
+            KirraMiner.oresFile.reload()
             Loader.i()
             sender.sendMessage("&c[System] &7重载完毕.".colored())
         }
@@ -49,28 +51,30 @@ object Commands {
     @CommandBody
     val setLoc = subCommand {
         dynamic(commit = "type") {
-            execute<Player> { player, context, _ ->
-                when (context.get(1).lowercase()) {
-                    "a" -> {
-                        FunctionOreCreate.setLocA(player.location)
-                        player.sendMessage("&c[System] &7设置 A 点成功.".colored())
-                        return@execute
-                    }
-                    "b" -> {
-                        FunctionOreCreate.setLocB(player.location)
-                        player.sendMessage("&c[System] &7设置 B 点成功.".colored())
-                        return@execute
-                    }
-                    "ylimit" -> {
-                        val yLimit = context.getOrNull(2)?.toIntOrNull()
-                        if (yLimit == null) {
-                            player.sendMessage("&c[System] &7错误格式.".colored())
+            dynamic(commit = "yLimit", optional = true) {
+                execute<Player> { player, context, _ ->
+                    when (context.get(1).lowercase()) {
+                        "a" -> {
+                            FunctionOreCreate.setLocA(player.location)
+                            player.sendMessage("&c[System] &7设置 A 点成功.".colored())
                             return@execute
                         }
-                        FunctionOreCreate.setYLimit(yLimit)
-                        player.sendMessage("&c[System] &7设置 Y 轴限制成功.".colored())
+                        "b" -> {
+                            FunctionOreCreate.setLocB(player.location)
+                            player.sendMessage("&c[System] &7设置 B 点成功.".colored())
+                            return@execute
+                        }
+                        "ylimit" -> {
+                            val yLimit = context.getOrNull(2)?.toIntOrNull()
+                            if (yLimit == null) {
+                                player.sendMessage("&c[System] &7错误格式.".colored())
+                                return@execute
+                            }
+                            FunctionOreCreate.setYLimit(yLimit)
+                            player.sendMessage("&c[System] &7设置 Y 轴限制成功.".colored())
+                        }
+                        else -> player.sendMessage("&c[System] &7错误格式.".colored())
                     }
-                    else -> player.sendMessage("&c[System] &7错误格式.".colored())
                 }
             }
         }

@@ -4,6 +4,8 @@ import net.sakuragame.eternal.kirraminer.KirraMinerAPI
 import net.sakuragame.eternal.kirraminer.Profile.Companion.profile
 import net.sakuragame.eternal.kirraminer.getPickaxeLevel
 import net.sakuragame.eternal.kirraminer.sendActionMessage
+import org.bukkit.entity.ArmorStand
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.inventory.EquipmentSlot
 import taboolib.common.platform.event.SubscribeEvent
@@ -15,6 +17,14 @@ object FunctionDigListener {
 
     val baffle by lazy {
         Baffle.of(1, TimeUnit.SECONDS)
+    }
+
+    @SubscribeEvent
+    fun e(e: EntityDamageEvent) {
+        val armorStand = e.entity as? ArmorStand ?: return
+        if (armorStand.hasMetadata(KirraMinerAPI.MINE_ENTITY_IDENTIFIER)) {
+            e.isCancelled = true
+        }
     }
 
     @SubscribeEvent
