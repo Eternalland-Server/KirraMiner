@@ -12,10 +12,6 @@ object KirraMiner : Plugin() {
     lateinit var conf: Configuration
         private set
 
-    @Config(value = "ores.yml")
-    lateinit var oresFile: Configuration
-        private set
-
     @Suppress("MemberVisibilityCanBePrivate")
     val plugin by lazy {
         BukkitPlugin.getInstance()

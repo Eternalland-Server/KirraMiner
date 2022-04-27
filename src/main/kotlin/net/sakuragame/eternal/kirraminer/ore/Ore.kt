@@ -1,8 +1,9 @@
 package net.sakuragame.eternal.kirraminer.ore
 
 import net.sakuragame.eternal.kirraminer.*
+import net.sakuragame.eternal.kirraminer.event.MineEndEvent
+import net.sakuragame.eternal.kirraminer.event.MineStartEvent
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
-import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Sound
 import org.bukkit.entity.Player
@@ -15,10 +16,11 @@ import taboolib.platform.util.asLangText
 data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, val digMetadata: DigMetadata, val digState: DigState) {
 
     fun dig(player: Player, profile: Profile) {
+        MineStartEvent(player, this).call()
         val maxDigTime = digMetadata.digTime
         digState.isDigging = true
         profile.startDigging(this)
-        submit(async = false, delay = 10L) {
+        submit(async = true, delay = 7L) {
             KirraMinerAPI.generateHologram(this@Ore, OreState.DIGGING, profile)
         }
         submit(async = true, period = 10L) {
@@ -81,6 +83,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
     private fun giveResult(player: Player) {
         submit(async = false) {
             val itemStack = digMetadata.digResult.getResultItem(player) ?: return@submit
+            MineEndEvent(player, this@Ore, itemStack).call()
             val droppedItem = loc.world.dropItem(loc.clone().add(0.0, 0.6, 0.0), itemStack).apply {
                 pickupDelay = 999999
                 isGlowing = true
@@ -94,10 +97,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
 
     private fun refreshHologram(profile: Profile) {
         val hologram = KirraMinerAPI.hologramMap[id] ?: return
-        hologram.getTextLine(2).text = "&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored()
-        Bukkit.getOnlinePlayers().forEach {
-            hologram.refreshVisibility(it)
-        }
+        hologram.getPage(0).getLine(2).text = "&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored()
     }
 
     private fun getProgressBar(profile: Profile): String {
@@ -115,7 +115,9 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
             currentEntity.remove()
             digState.entity = null
         }
-        digState.entity = KirraMinerAPI.generateOreEntity(this, state)
+        submit(async = false) {
+            digState.entity = KirraMinerAPI.generateOreEntity(this@Ore, state)
+        }
     }
 
     companion object {
@@ -127,7 +129,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
                     .filter { it.digState.isRefreshing }
                     .filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }
                     .forEach {
-                        submit(async = false) {
+                        submit(async = true) {
                             it.refresh()
                         }
                     }

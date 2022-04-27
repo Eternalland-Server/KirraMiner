@@ -3,7 +3,7 @@ package net.sakuragame.eternal.kirraminer.ore
 @Suppress("SpellCheckingInspection")
 enum class OreState {
 
-    IDLE, DIGGING, COOLDOWN, FINAL;
+    IDLE, DIGGING, FINAL, COOLDOWN;
 
     fun getString(ore: Ore): String {
         return when (this) {

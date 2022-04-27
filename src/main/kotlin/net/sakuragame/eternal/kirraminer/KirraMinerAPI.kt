@@ -1,7 +1,7 @@
 package net.sakuragame.eternal.kirraminer
 
-import me.arasple.mc.trhologram.api.TrHologramAPI
-import me.arasple.mc.trhologram.module.display.Hologram
+import eu.decentsoftware.holograms.api.DHAPI
+import eu.decentsoftware.holograms.api.holograms.Hologram
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
@@ -49,7 +49,7 @@ object KirraMinerAPI {
     private fun getRandomLocBetween2Loc(locA: Location, locB: Location, yLimit: Int, counts: Int): Location {
         val world = locA.world
 
-        if (counts > 5) {
+        if (counts > 10) {
             error("获取随机坐标失败.")
         }
 
@@ -85,8 +85,8 @@ object KirraMinerAPI {
      */
     fun recycleAllOres() {
         Bukkit.getWorlds().map { it.entities }.forEach {
-            it.forEach { entity ->
-                if (entity is ArmorStand && entity.hasMetadata(MINE_ENTITY_IDENTIFIER)) {
+            it.filterIsInstance<ArmorStand>().forEach { entity ->
+                if (entity.customName.contains("@*")) {
                     entity.remove()
                 }
             }
@@ -127,43 +127,38 @@ object KirraMinerAPI {
             hologram.destroy()
             hologramMap -= ore.id
         }
+        val iconStr = "#ICON: PAPER {zaphkiel:{a:${ore.digMetadata.digResult.itemId}}}"
+        val uuid = UUID.randomUUID().toString()
         hologramMap[ore.id] = when (state) {
-            IDLE -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 3.4, 0.0))
-                .append({
-                    resultItem
-                })
-                .append("&f&l${ore.digMetadata.digEntityName.idle}".colored())
-                .append("&7矿镐要求等级: &f${ore.digMetadata.digLevel}".colored())
-                .append(" ")
-                .append("&7掉落物品: ".colored())
-                .append("&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})".colored())
-                .build()
-            DIGGING -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.5, 0.0))
-                .append({
-                    resultItem
-                })
-                .append("&7正在收集... &f[${profile!!.player.name}]".colored())
-                .append("&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored())
-                .build()
-            COOLDOWN -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.0, 0.0))
-                .append({
-                    resultItem
-                })
-                .append("&7正在冷却.".colored())
-                .append("&7将在 &f${getTextureDate(ore.digState.futureRefreshMillis)} &7刷新.".colored())
-                .append(" ")
-                .build()
-            FINAL -> TrHologramAPI.builder(ore.loc.clone().add(0.0, 2.4, 0.0))
-                .append({
-                    resultItem
-                })
-                .append("&7挖掘完成! &a&l✓".colored())
-                .append(" ")
-                .build()
-        }.apply {
-            Bukkit.getOnlinePlayers().forEach {
-                refreshVisibility(it)
-            }
+            IDLE -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
+                iconStr,
+                "&f&l${ore.digMetadata.digEntityName.idle}",
+                "&7矿镐要求等级: &f${ore.digMetadata.digLevel}",
+                "",
+                "&7掉落物品: ",
+                "&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})",
+                ""))
+            DIGGING -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+                listOf(
+                    iconStr,
+                    "&7正在收集... &f[${profile!!.player.name}]",
+                    "&8( ${profile.getDiggingProgressBar() ?: ""} &8)"
+                )
+            )
+            FINAL -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+                listOf(
+                    iconStr,
+                    "&7挖掘完成! &a&l✓",
+                    " "
+                ))
+            COOLDOWN -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+                listOf(
+                    iconStr,
+                    "&7正在冷却.",
+                    "&7将在 &f${getTextureDate(ore.digState.futureRefreshMillis)} &7刷新.",
+                    " "
+                )
+            )
         }
     }
 
@@ -174,11 +169,11 @@ object KirraMinerAPI {
      * @return 实体实例.
      */
     fun generateOreEntity(ore: Ore, state: OreState): ArmorStand {
-        val loc = ore.loc
+        val loc = ore.loc.clone().add(0.0, 2.0, 0.0)
         val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
             it.isGlowing = true
-            it.setGravity(false)
-            it.customName = "&r${state.getString(ore)}".colored()
+            it.setGravity(true)
+            it.customName = "&8&l&o${state.getString(ore)}@*".colored()
             it.setMetadata(MINE_ENTITY_IDENTIFIER, FixedMetadataValue(KirraMiner.plugin, ""))
         }
         generateHologram(ore, state, null)
