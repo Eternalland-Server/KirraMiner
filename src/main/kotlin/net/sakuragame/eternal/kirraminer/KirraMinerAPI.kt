@@ -7,8 +7,6 @@ import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
 import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
@@ -16,8 +14,6 @@ import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.module.chat.uncolored
 import java.util.*
-import java.util.concurrent.ThreadLocalRandom
-import kotlin.math.abs
 
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
@@ -29,48 +25,6 @@ object KirraMinerAPI {
     val hologramMap = mutableMapOf<String, Hologram>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
-
-    val defaultYLimit: Int
-        get() {
-            return KirraMiner.conf.getInt("settings.default-y-limit")
-        }
-
-    /**
-     * 获取两个坐标之间的随机坐标.
-     * @param locA 坐标 A.
-     * @param locB 坐标 B.
-     * @param yLimit 坐标 Y 轴限制.
-     * @return 随机坐标.
-     */
-    fun getRandomLocBetween2Loc(locA: Location, locB: Location, yLimit: Int): Location {
-        return getRandomLocBetween2Loc(locA, locB, yLimit, 0)
-    }
-
-    private fun getRandomLocBetween2Loc(locA: Location, locB: Location, yLimit: Int, counts: Int): Location {
-        val world = locA.world
-
-        if (counts > 10) {
-            error("获取随机坐标失败.")
-        }
-
-        val minX = locB.x.coerceAtMost(locA.x)
-        val minZ = locB.z.coerceAtMost(locA.z)
-
-        val maxX = locB.x.coerceAtLeast(locA.x)
-        val maxZ = locB.z.coerceAtLeast(locA.z)
-
-        val loc = Location(world, getRandomDouble(minX, maxX), getRandomDouble(yLimit.toDouble(), yLimit.toDouble()), getRandomDouble(minZ, maxZ))
-
-        if (loc.block.type != Material.AIR) {
-            return getRandomLocBetween2Loc(loc, locB, yLimit, counts + 1)
-        }
-
-        return loc
-    }
-
-    private fun getRandomDouble(min: Double, max: Double): Double {
-        return min + ThreadLocalRandom.current().nextDouble(abs(max - min + 1))
-    }
 
     /**
      * 根据生物 UUID 获取相应的矿物实例.
@@ -169,10 +123,9 @@ object KirraMinerAPI {
      * @return 实体实例.
      */
     fun generateOreEntity(ore: Ore, state: OreState): ArmorStand {
-        val loc = ore.loc.clone().add(0.0, 2.0, 0.0)
+        val loc = ore.loc.clone()
         val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
-            it.isGlowing = true
-            it.setGravity(true)
+            it.setGravity(false)
             it.customName = "&8&l&o${state.getString(ore)}@*".colored()
             it.setMetadata(MINE_ENTITY_IDENTIFIER, FixedMetadataValue(KirraMiner.plugin, ""))
         }

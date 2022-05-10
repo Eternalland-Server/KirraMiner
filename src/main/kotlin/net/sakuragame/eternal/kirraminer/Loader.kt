@@ -37,8 +37,7 @@ object Loader {
     private fun readConfig(conf: ConfigFile) {
         conf.getKeys(false).forEach {
             val digMetadataList = mutableListOf<DigMetadata>()
-            val oreLoc = conf.getOreLoc("$it.ore-loc") ?: return@forEach
-            val loc = KirraMinerAPI.getRandomLocBetween2Loc(oreLoc.a, oreLoc.b, oreLoc.yLimit)
+            val loc = conf.getString("$it.loc")?.parseToLoc() ?: return@forEach
             val refreshTime = IntInterval.fromString(conf.getString("$it.refresh-time") ?: return@forEach) ?: return@forEach
             val metadataSection = conf.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
@@ -57,12 +56,5 @@ object Loader {
                 refresh()
             }
         }
-    }
-
-    private fun Configuration.getOreLoc(path: String): OreLocation? {
-        val locA = getString("$path.a")?.parseToLoc() ?: return null
-        val locB = getString("$path.b")?.parseToLoc() ?: return null
-        val yLimit = getInt("$path.y-limit")
-        return OreLocation(locA, locB, yLimit)
     }
 }

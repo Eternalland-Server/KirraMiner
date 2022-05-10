@@ -6,7 +6,9 @@ import taboolib.common.platform.command.CommandBody
 import taboolib.common.platform.command.CommandHeader
 import taboolib.common.platform.command.mainCommand
 import taboolib.common.platform.command.subCommand
+import taboolib.common.platform.function.adaptCommandSender
 import taboolib.expansion.createHelper
+import taboolib.module.chat.TellrawJson
 import taboolib.module.chat.colored
 
 @Suppress("SpellCheckingInspection")
@@ -29,10 +31,15 @@ object Commands {
     }
 
     @CommandBody
-    val pasteLocToConsole = subCommand {
+    val pasteLoc = subCommand {
         execute<Player> { player, _, _ ->
-            player.sendMessage("&c[System] &7已将信息打印至后台.".colored())
-            println("坐标: ${player.location.parseToString()}")
+            val loc = player.location.parseToString()
+            player.sendMessage("&c[System] &7正在打印信息".colored())
+            println(loc)
+            TellrawJson()
+                .append("&c[System] &7$loc".colored())
+                .suggestCommand(loc)
+                .sendTo(adaptCommandSender(player))
         }
     }
 

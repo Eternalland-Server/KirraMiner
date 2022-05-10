@@ -20,16 +20,16 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
         val maxDigTime = digMetadata.digTime
         digState.isDigging = true
         profile.startDigging(this)
-        submit(async = true, delay = 7L) {
+        submit(async = true, delay = 3L) {
             KirraMinerAPI.generateHologram(this@Ore, OreState.DIGGING, profile)
         }
-        submit(async = true, period = 10L) {
+        submit(async = true, delay = 5L, period = 10L) {
             if (!player.isOnline) {
                 cancel()
                 return@submit
             }
-            val targetedEntity = getTargetedEntity(player, player.world.entities)
-            if (targetedEntity == null) {
+            val targetedEntity = player.getLookingEntity()
+            if (targetedEntity == null || targetedEntity.uniqueId != digState.entity?.uniqueId) {
                 if (profile.digTime > 0.0) {
                     player.playSound(player.location, Sound.BLOCK_NOTE_BASS, 1f, 1.5f)
                     player.sendTitle("", "&c&l结束挖矿! &4&l✘".colored(), 0, 30, 0)
@@ -75,6 +75,7 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
         submit(async = false, delay = 10L) {
             init(after = true)
         }
+        digState.isDigging = false
         digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
         digState.isRefreshing = true
         profile.reset()
@@ -125,14 +126,11 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
         @Awake(LifeCycle.ACTIVE)
         fun i() {
             submit(async = true, period = 20L) {
-                KirraMinerAPI.ores.values
-                    .filter { it.digState.isRefreshing }
-                    .filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }
-                    .forEach {
-                        submit(async = true) {
-                            it.refresh()
-                        }
+                KirraMinerAPI.ores.values.filter { it.digState.isRefreshing }.filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }.forEach {
+                    submit(async = true) {
+                        it.refresh()
                     }
+                }
             }
         }
     }
