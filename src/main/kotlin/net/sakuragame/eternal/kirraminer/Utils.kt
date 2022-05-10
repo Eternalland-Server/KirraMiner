@@ -68,8 +68,8 @@ fun Player.swingHand() {
     sendPacket(PacketPlayOutAnimation((player as CraftPlayer).handle, 0))
 }
 
-fun LivingEntity.getLookingEntity(): Entity? {
-    val entities = this.world.entities
+fun LivingEntity.getLookingEntity(radius: Double): Entity? {
+    val entities = getNearbyEntities(radius, radius, radius)
     entities.forEach {
         val direct = it.location.clone().subtract(location).toVector().setY(0).normalize()
         val lookDir = this.eyeLocation.direction.setY(0).normalize()

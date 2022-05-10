@@ -6,6 +6,7 @@ import net.sakuragame.eternal.kirraminer.event.MineStartEvent
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
 import org.bukkit.Location
 import org.bukkit.Sound
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
@@ -28,8 +29,8 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
                 cancel()
                 return@submit
             }
-            val targetedEntity = player.getLookingEntity()
-            if (targetedEntity == null || targetedEntity.uniqueId != digState.entity?.uniqueId) {
+            val targetedEntity = player.getLookingEntity(3.0)
+            if (targetedEntity == null || targetedEntity.type != EntityType.ARMOR_STAND || targetedEntity.location.distance(player.location) > 4) {
                 if (profile.digTime > 0.0) {
                     player.playSound(player.location, Sound.BLOCK_NOTE_BASS, 1f, 1.5f)
                     player.sendTitle("", "&c&l结束挖矿! &4&l✘".colored(), 0, 30, 0)
@@ -111,9 +112,8 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
             true -> OreState.COOLDOWN
             false -> OreState.IDLE
         }
-        val currentEntity = digState.entity
-        if (currentEntity != null) {
-            currentEntity.remove()
+        if (digState.entity != null) {
+            digState.entity?.remove()
             digState.entity = null
         }
         submit(async = false) {
