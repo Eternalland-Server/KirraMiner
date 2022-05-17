@@ -14,7 +14,7 @@ import taboolib.common.platform.function.submit
 import taboolib.module.chat.colored
 import taboolib.platform.util.asLangText
 
-data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, val digMetadata: DigMetadata, val digState: DigState) {
+data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refreshTime: IntInterval, val digMetadata: DigMetadata, val digState: DigState) {
 
     fun dig(player: Player, profile: Profile) {
         MineStartEvent(player, this).call()
@@ -83,6 +83,10 @@ data class Ore(val id: String, val loc: Location, val refreshTime: IntInterval, 
     }
 
     private fun giveResult(player: Player) {
+        // should not happen.
+        if (loc == null) {
+            return
+        }
         submit(async = false) {
             val itemStack = digMetadata.digResult.getResultItem(player) ?: return@submit
             MineEndEvent(player, this@Ore, itemStack).call()

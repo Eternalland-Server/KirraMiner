@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("io.izzel.taboolib") version "1.34"
-    id("org.jetbrains.kotlin.jvm") version "1.5.10"
+    id("org.jetbrains.kotlin.jvm") version "1.5.30"
 }
 
 taboolib {
@@ -23,7 +23,7 @@ taboolib {
     install("expansion-command-helper")
     install("module-database")
     classifier = null
-    version = "6.0.7-64"
+    version = "6.0.8-3"
 }
 
 repositories {
@@ -45,7 +45,6 @@ dependencies {
     compileOnly("ink.ptms:Zaphkiel:1.7.6@jar")
     compileOnly("net.sakuragame.eternal:JustMessage:1.0.4-SNAPSHOT@jar")
     compileOnly("org.spigotmc:spigot:1.12.2-R0.1-SNAPSHOT")
-//    compileOnly("ink.ptms.core:v11200:11200")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))
 }

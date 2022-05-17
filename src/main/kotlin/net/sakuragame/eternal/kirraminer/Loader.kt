@@ -37,7 +37,7 @@ object Loader {
     private fun readConfig(conf: ConfigFile) {
         conf.getKeys(false).forEach {
             val digMetadataList = mutableListOf<DigMetadata>()
-            val loc = conf.getString("$it.loc")?.parseToLoc() ?: return@forEach
+            val loc = conf.getString("$it.loc")?.parseToLoc()
             val refreshTime = IntInterval.fromString(conf.getString("$it.refresh-time") ?: return@forEach) ?: return@forEach
             val metadataSection = conf.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
@@ -52,9 +52,13 @@ object Loader {
             }
             KirraMinerAPI.oreMetadataMap[it] = digMetadataList
             val randomMeta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
-            KirraMinerAPI.ores[it] = Ore(it, loc, refreshTime, randomMeta, DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())).apply {
-                refresh()
-            }
+            val ore = Ore(it,
+                false,
+                loc,
+                refreshTime,
+                randomMeta,
+                DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis()))
+            KirraMinerAPI.addOre(ore.id, ore)
         }
     }
 }

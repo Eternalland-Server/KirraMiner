@@ -7,6 +7,7 @@ import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
 import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
@@ -27,15 +28,53 @@ object KirraMinerAPI {
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
 
     /**
-     * 根据生物 UUID 获取相应的矿物实例.
+     * 增加一个实例矿物
+     *
+     * @param id
+     * @param ore
+     */
+    fun addOre(id: String, ore: Ore) {
+        ores[id] = ore.apply {
+            if (loc == null) {
+                return@apply
+            }
+            refresh()
+        }
+    }
+
+    /**
+     * 根据模板创建一个新的临时矿物
+     *
+     * @param id 矿物 id
+     * @param templateOre 模板矿物
+     * @param loc 坐标
+     * @return 是否创建成功
+     */
+    fun createTempOre(id: String, templateOre: Ore, loc: Location): Boolean {
+        if (templateOre.isTemp || ores.containsKey(id)) {
+            return false
+        }
+        val ore = templateOre.copy(
+            id = id,
+            isTemp = true,
+            loc = loc,
+            digMetadata = templateOre.digMetadata.copy(),
+            digState = templateOre.digState.copy()
+        )
+        addOre(id, ore)
+        return true
+    }
+
+    /**
+     * 根据生物 UUID 获取相应的矿物实例
      *
      * @param uuid 生物 UUID
-     * @return 矿物实例.
+     * @return 矿物实例
      */
     fun getOreByEntityUUID(uuid: UUID) = ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
 
     /**
-     * 回收所有的矿物实体, 包括全息字.
+     * 回收所有的矿物实体, 包括全息字
      */
     fun recycleAllOres() {
         Bukkit.getWorlds().map { it.entities }.forEach {
@@ -52,10 +91,10 @@ object KirraMinerAPI {
     }
 
     /**
-     * 根据 ID 来获取权重挖掘元数据.
+     * 根据 ID 来获取权重挖掘元数据
      *
-     * @param id 字符串.
-     * @return 挖掘元数据.
+     * @param id 字符串
+     * @return 挖掘元数据
      */
     fun getWeightRandomMetadataByID(id: String): DigMetadata? {
         val metadataList = oreMetadataMap[id] ?: return null
@@ -68,11 +107,14 @@ object KirraMinerAPI {
 
     /**
      * 生成全息实体.
-     * @param ore 矿物实例.
-     * @param state 矿物状态.
-     * @param profile 玩家档案.
+     * @param ore 矿物实例
+     * @param state 矿物状态
+     * @param profile 玩家档案
      */
     fun generateHologram(ore: Ore, state: OreState, profile: Profile?) {
+        if (ore.loc == null) {
+            return
+        }
         val resultItem = ore.digMetadata.digResult.getResultItem(null)!!.apply {
             amount = 1
         }
@@ -117,12 +159,15 @@ object KirraMinerAPI {
     }
 
     /**
-     * 生成一个矿物实体.
+     * 生成一个矿物实体
      *
-     * @param ore 矿物实例.
-     * @return 实体实例.
+     * @param ore 矿物实例
+     * @return 实体实例
      */
-    fun generateOreEntity(ore: Ore, state: OreState): ArmorStand {
+    fun generateOreEntity(ore: Ore, state: OreState): ArmorStand? {
+        if (ore.loc == null) {
+            return null
+        }
         val loc = ore.loc.clone()
         val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
             it.setGravity(false)
