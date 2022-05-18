@@ -51,13 +51,15 @@ object Loader {
                 digMetadataList += DigMetadata(weight, digEntityName, digLevel, digTime, digResult)
             }
             KirraMinerAPI.oreMetadataMap[it] = digMetadataList
-            val randomMeta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
-            val ore = Ore(it,
-                false,
-                loc,
-                refreshTime,
-                randomMeta,
-                DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis()))
+            val meta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
+            val ore = Ore(id = it,
+                isTemp = false,
+                loc = loc,
+                refreshTime = refreshTime,
+                digState = DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis()),
+                digMetadata = meta,
+                hologram = null
+            )
             KirraMinerAPI.addOre(ore.id, ore)
         }
     }

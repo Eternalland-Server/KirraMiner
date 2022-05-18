@@ -1,5 +1,6 @@
 package net.sakuragame.eternal.kirraminer.ore
 
+import eu.decentsoftware.holograms.api.holograms.Hologram
 import net.sakuragame.eternal.kirraminer.*
 import net.sakuragame.eternal.kirraminer.event.MineEndEvent
 import net.sakuragame.eternal.kirraminer.event.MineStartEvent
@@ -14,7 +15,7 @@ import taboolib.common.platform.function.submit
 import taboolib.module.chat.colored
 import taboolib.platform.util.asLangText
 
-data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refreshTime: IntInterval, val digMetadata: DigMetadata, val digState: DigState) {
+data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refreshTime: IntInterval, val digState: DigState, var digMetadata: DigMetadata, var hologram: Hologram? = null) {
 
     fun dig(player: Player, profile: Profile) {
         MineStartEvent(player, this).call()
@@ -102,8 +103,9 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
     }
 
     private fun refreshHologram(profile: Profile) {
-        val hologram = KirraMinerAPI.hologramMap[id] ?: return
-        hologram.getPage(0).getLine(2).text = "&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored()
+        hologram?.let {
+            it.getPage(0).getLine(2).text = "&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored()
+        }
     }
 
     private fun getProgressBar(profile: Profile): String {
@@ -112,6 +114,7 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
     }
 
     private fun init(after: Boolean = false) {
+        digMetadata = KirraMinerAPI.getWeightRandomMetadataByID(id)!!
         val state = when (after) {
             true -> OreState.COOLDOWN
             false -> OreState.IDLE

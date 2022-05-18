@@ -1,13 +1,14 @@
 package net.sakuragame.eternal.kirraminer
 
 import eu.decentsoftware.holograms.api.DHAPI
-import eu.decentsoftware.holograms.api.holograms.Hologram
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
+import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
 import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.World
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
 import org.bukkit.metadata.FixedMetadataValue
@@ -15,23 +16,37 @@ import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.module.chat.uncolored
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
 
     const val MINE_ENTITY_IDENTIFIER = "KIRRAMINER_ENTITY"
 
-    val ores = mutableMapOf<String, Ore>()
-
-    val hologramMap = mutableMapOf<String, Hologram>()
+    val ores = ConcurrentHashMap<String, Ore>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
 
     /**
+     * 获取矿物的 mapId
+     *
+     * @param ore 矿物
+     */
+    fun getOreMapId(ore: Ore): String? {
+        ores.forEach { (id, value) ->
+            val loc = value.loc ?: return@forEach
+            if (loc == ore.loc!!) {
+                return id
+            }
+        }
+        return null
+    }
+
+    /**
      * 增加一个实例矿物
      *
-     * @param id
-     * @param ore
+     * @param id id
+     * @param ore 矿物
      */
     fun addOre(id: String, ore: Ore) {
         ores[id] = ore.apply {
@@ -39,6 +54,33 @@ object KirraMinerAPI {
                 return@apply
             }
             refresh()
+        }
+    }
+
+    /**
+     * 移除一个实例矿物
+     *
+     * @param id
+     */
+    fun removeOre(id: String) {
+        val ore = ores[id] ?: return
+        ore.hologram?.destroy()
+        ore.digState.entity?.remove()
+        ores.remove(id)
+    }
+
+    /**
+     * 移除该世界的所有矿物
+     *
+     * @param world 世界
+     */
+    fun removeOresOfWorld(world: World) {
+        val armorStands = world.entities.filterIsInstance<ArmorStand>()
+        val worldUid = armorStands.getOrNull(0)?.world?.uid ?: return
+        KirraMinerAPI.ores.forEach { (id, ore) ->
+            if (ore.loc?.world?.uid == worldUid) {
+                KirraMinerAPI.removeOre(id)
+            }
         }
     }
 
@@ -54,12 +96,14 @@ object KirraMinerAPI {
         if (templateOre.isTemp || ores.containsKey(id)) {
             return false
         }
+        val templateId = templateOre.id
+        val weightedMeta = getWeightRandomMetadataByID(templateId) ?: return false
         val ore = templateOre.copy(
-            id = id,
+            id = templateOre.id,
             isTemp = true,
             loc = loc,
-            digMetadata = templateOre.digMetadata.copy(),
-            digState = templateOre.digState.copy()
+            digMetadata = weightedMeta,
+            digState = DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())
         )
         addOre(id, ore)
         return true
@@ -71,7 +115,9 @@ object KirraMinerAPI {
      * @param uuid 生物 UUID
      * @return 矿物实例
      */
-    fun getOreByEntityUUID(uuid: UUID) = ores.values.firstOrNull { uuid == it.digState.entity?.uniqueId }
+    fun getOreByEntityUUID(uuid: UUID): Ore? {
+        return ores.values.find { it.digState.entity?.uniqueId == uuid }
+    }
 
     /**
      * 回收所有的矿物实体, 包括全息字
@@ -84,10 +130,9 @@ object KirraMinerAPI {
                 }
             }
         }
-        hologramMap.values.forEach {
-            it.destroy()
+        ores.values.forEach {
+            it.hologram?.destroy()
         }
-        hologramMap.clear()
     }
 
     /**
@@ -115,17 +160,14 @@ object KirraMinerAPI {
         if (ore.loc == null) {
             return
         }
+        ore.hologram?.destroy()
+        ore.hologram = null
         val resultItem = ore.digMetadata.digResult.getResultItem(null)!!.apply {
             amount = 1
         }
-        if (hologramMap[ore.id] != null) {
-            val hologram = hologramMap[ore.id]!!
-            hologram.destroy()
-            hologramMap -= ore.id
-        }
         val iconStr = "#ICON: PAPER {zaphkiel:{a:${ore.digMetadata.digResult.itemId}}}"
         val uuid = UUID.randomUUID().toString()
-        hologramMap[ore.id] = when (state) {
+        ore.hologram = when (state) {
             IDLE -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
                 iconStr,
                 "&f&l${ore.digMetadata.digEntityName.idle}",
