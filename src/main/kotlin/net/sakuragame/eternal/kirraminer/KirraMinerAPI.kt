@@ -6,11 +6,13 @@ import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.OreState
 import net.sakuragame.eternal.kirraminer.ore.OreState.*
+import net.sakuragame.eternal.waypoints.api.WaypointsAPI
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.EntityType
+import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
@@ -40,6 +42,23 @@ object KirraMinerAPI {
             }
         }
         return null
+    }
+
+    /**
+     * 获取离玩家最近的矿石
+     *
+     * @param player 玩家
+     * @param id 矿物 id
+     */
+    fun getNearestOreOfPlayer(player: Player, id: String): Ore? {
+        val ore = ores.values
+            .filter { it.loc != null }
+            .filter { it.digMetadata.digEntityName.idle.contains(id) }
+            .filter { !it.digState.isRefreshing && !it.digState.isDigging }
+            .minByOrNull { it.loc!!.distanceSquared(player.location) } ?: return null
+        val loc = ore.loc!!.clone().add(0.0, 2.0, 1.0)
+        WaypointsAPI.navPointer(player, "ore", loc, 1.0, listOf(ore.digMetadata.digEntityName.idle))
+        return ore
     }
 
     /**
@@ -74,7 +93,7 @@ object KirraMinerAPI {
      *
      * @param world 世界
      */
-    fun removeOresOfWorld(world: World) {
+    fun removeAllOresInWorld(world: World) {
         val armorStands = world.entities.filterIsInstance<ArmorStand>()
         val worldUid = armorStands.getOrNull(0)?.world?.uid ?: return
         KirraMinerAPI.ores.forEach { (id, ore) ->
@@ -168,28 +187,35 @@ object KirraMinerAPI {
         val iconStr = "#ICON: PAPER {zaphkiel:{a:${ore.digMetadata.digResult.itemId}}}"
         val uuid = UUID.randomUUID().toString()
         ore.hologram = when (state) {
-            IDLE -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
-                iconStr,
-                "&f&l${ore.digMetadata.digEntityName.idle}",
-                "&7矿镐要求等级: &f${ore.digMetadata.digLevel}",
-                "",
-                "&7掉落物品: ",
-                "&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})",
-                ""))
-            DIGGING -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+            IDLE -> DHAPI.createHologram(
+                uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
+                    iconStr,
+                    "&f&l${ore.digMetadata.digEntityName.idle}",
+                    "&7矿镐要求等级: &f${ore.digMetadata.digLevel}",
+                    "",
+                    "&7掉落物品: ",
+                    "&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})",
+                    ""
+                )
+            )
+            DIGGING -> DHAPI.createHologram(
+                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
                 listOf(
                     iconStr,
                     "&7正在收集... &f[${profile!!.player.name}]",
                     "&8( ${profile.getDiggingProgressBar() ?: ""} &8)"
                 )
             )
-            FINAL -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+            FINAL -> DHAPI.createHologram(
+                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
                 listOf(
                     iconStr,
                     "&7挖掘完成! &a&l✓",
                     " "
-                ))
-            COOLDOWN -> DHAPI.createHologram(uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
+                )
+            )
+            COOLDOWN -> DHAPI.createHologram(
+                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
                 listOf(
                     iconStr,
                     "&7正在冷却.",

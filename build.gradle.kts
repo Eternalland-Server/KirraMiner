@@ -41,6 +41,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly("net.sakuragame.eternal:Waypoints:1.0.0-SNAPSHOT@jar")
     compileOnly("com.github.decentsoftware-eu:decentholograms:2.3.1")
     compileOnly("ink.ptms:Zaphkiel:1.7.6@jar")
     compileOnly("net.sakuragame.eternal:JustMessage:1.0.4-SNAPSHOT@jar")

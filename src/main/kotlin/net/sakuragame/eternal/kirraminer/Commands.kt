@@ -44,6 +44,15 @@ object Commands {
     }
 
     @CommandBody
+    val test = subCommand {
+        dynamic(commit = "id") {
+            execute<Player> { player, _, argument ->
+                KirraMinerAPI.getNearestOreOfPlayer(player, argument)
+            }
+        }
+    }
+
+    @CommandBody
     val list = subCommand {
         execute<CommandSender> { sender, _, _ ->
             sender.sendMessage("&c[System] &7当前矿物列表.".colored())

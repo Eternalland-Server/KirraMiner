@@ -9,6 +9,6 @@ object FunctionListener {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     fun e(e: WorldUnloadEvent) {
-        KirraMinerAPI.removeOresOfWorld(e.world)
+        KirraMinerAPI.removeAllOresInWorld(e.world)
     }
 }
