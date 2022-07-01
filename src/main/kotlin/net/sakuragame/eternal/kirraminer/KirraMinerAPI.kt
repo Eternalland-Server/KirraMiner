@@ -17,6 +17,7 @@ import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.module.chat.uncolored
+import taboolib.platform.util.title
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -57,7 +58,8 @@ object KirraMinerAPI {
             .filter { !it.digState.isRefreshing && !it.digState.isDigging }
             .minByOrNull { it.loc!!.distanceSquared(player.location) } ?: return null
         val loc = ore.loc!!.clone().add(0.0, 2.0, 1.0)
-        WaypointsAPI.navPointer(player, "ore", loc, 1.0, listOf(ore.digMetadata.digEntityName.idle))
+        WaypointsAPI.navPointer(player, "ore", loc, 5.0, listOf(ore.digMetadata.digEntityName.idle))
+        player.title("", "&e&l已为您展示距离您最近的${ore.digMetadata.digEntityName.idle}坐标".colored(), 10, 20, 5)
         return ore
     }
 
