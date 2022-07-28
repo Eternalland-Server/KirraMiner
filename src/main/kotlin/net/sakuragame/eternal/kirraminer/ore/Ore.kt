@@ -133,11 +133,14 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
         @Awake(LifeCycle.ACTIVE)
         fun i() {
             submit(async = true, period = 20L) {
-                KirraMinerAPI.ores.values.filter { it.digState.isRefreshing }.filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }.forEach {
-                    submit(async = true) {
-                        it.refresh()
+                KirraMinerAPI.ores.values
+                    .filter { it.digState.isRefreshing }
+                    .filter { System.currentTimeMillis() >= it.digState.futureRefreshMillis }
+                    .forEach {
+                        submit(async = true) {
+                            it.refresh()
+                        }
                     }
-                }
             }
         }
     }
