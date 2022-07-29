@@ -57,8 +57,7 @@ object Loader {
                 loc = loc,
                 refreshTime = refreshTime,
                 digState = DigState(block = null, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis()),
-                digMetadata = meta,
-                hologram = null
+                digMetadata = meta
             )
             KirraMinerAPI.addOre(ore.id, ore)
         }

@@ -1,6 +1,5 @@
 package net.sakuragame.eternal.kirraminer.ore
 
-import eu.decentsoftware.holograms.api.holograms.Hologram
 import net.sakuragame.eternal.kirraminer.KirraMinerAPI
 import net.sakuragame.eternal.kirraminer.collectItem
 import net.sakuragame.eternal.kirraminer.event.MineEndEvent
@@ -21,7 +20,6 @@ data class Ore(
     val refreshTime: IntInterval,
     val digState: DigState,
     var digMetadata: DigMetadata,
-    var hologram: Hologram? = null
 ) {
 
     fun afterDig(player: Player) {
@@ -45,10 +43,6 @@ data class Ore(
             player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f)
         }
         giveResult(player)
-        KirraMinerAPI.generateHologram(this, OreState.FINAL)
-        submit(async = false, delay = 10L) {
-            init(after = true)
-        }
         digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
         digState.isRefreshing = true
     }
@@ -72,18 +66,14 @@ data class Ore(
         }
     }
 
-    private fun init(after: Boolean = false) {
+    private fun init() {
         digMetadata = KirraMinerAPI.getWeightRandomMetadataByID(id)!!
-        val state = when (after) {
-            true -> OreState.COOLDOWN
-            false -> OreState.IDLE
-        }
         if (digState.block != null) {
             digState.block?.remove()
             digState.block = null
         }
         submit(async = false) {
-            digState.block = KirraMinerAPI.generateOreBlock(this@Ore, state)
+            digState.block = KirraMinerAPI.generateOreBlock(this@Ore)
         }
     }
 

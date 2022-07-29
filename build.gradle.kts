@@ -10,7 +10,6 @@ taboolib {
             @Suppress("SpellCheckingInspection")
             name("Zaphkiel")
             name("JustMessage")
-            name("DecentHolograms")
         }
     }
     install("common")

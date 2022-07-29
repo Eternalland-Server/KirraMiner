@@ -2,19 +2,13 @@ package net.sakuragame.eternal.kirraminer
 
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
-import eu.decentsoftware.holograms.api.DHAPI
 import net.minecraft.server.v1_12_R1.BlockPosition
 import net.minecraft.server.v1_12_R1.TileEntitySkull
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
-import net.sakuragame.eternal.kirraminer.ore.OreState
-import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import net.sakuragame.eternal.waypoints.api.WaypointsAPI
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.World
+import org.bukkit.*
 import org.bukkit.block.Block
 import org.bukkit.block.Skull
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld
@@ -22,7 +16,6 @@ import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
-import taboolib.module.chat.uncolored
 import taboolib.platform.util.title
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -90,7 +83,6 @@ object KirraMinerAPI {
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeOre(id: String) {
         val ore = ores[id] ?: return
-        ore.hologram?.destroy()
         ore.digState.block?.remove()
         ores.remove(id)
     }
@@ -142,7 +134,7 @@ object KirraMinerAPI {
      * @return 矿物实例
      */
     fun getOreByLocation(loc: Location): Ore? {
-        return ores.values.find { it.loc?.equals(loc) ?: false }
+        return ores.values.find { loc == (it.digState.block?.location ?: false) }
     }
 
     /**
@@ -155,9 +147,6 @@ object KirraMinerAPI {
                     entity.remove()
                 }
             }
-        }
-        ores.values.forEach {
-            it.hologram?.destroy()
         }
     }
 
@@ -174,57 +163,9 @@ object KirraMinerAPI {
     }
 
     /**
-     * 生成全息实体
-     */
-    fun generateHologram(ore: Ore, state: OreState) {
-        if (ore.loc == null) {
-            return
-        }
-        ore.hologram?.destroy()
-        ore.hologram = null
-        val resultItem = ore.digMetadata.digResult.getResultItem(null)!!.apply {
-            amount = 1
-        }
-        val iconStr = "#ICON: PAPER {zaphkiel:{a:${ore.digMetadata.digResult.itemId}}}"
-        val uuid = UUID.randomUUID().toString()
-        ore.hologram = when (state) {
-            IDLE -> DHAPI.createHologram(
-                uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
-                    iconStr,
-                    "&f&l${ore.digMetadata.entityName}",
-                    "&7矿镐要求等级: &f${ore.digMetadata.digLevel}",
-                    "",
-                    "&7掉落物品: ",
-                    "&f- &e${resultItem.itemMeta.displayName.uncolored()} &7(${ore.digMetadata.digResult.amount})",
-                    ""
-                )
-            )
-
-            FINAL -> DHAPI.createHologram(
-                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
-                listOf(
-                    iconStr,
-                    "&7挖掘完成! &a&l✓",
-                    " "
-                )
-            )
-
-            COOLDOWN -> DHAPI.createHologram(
-                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
-                listOf(
-                    iconStr,
-                    "&7正在冷却.",
-                    "&7将在 &f${getTextureDate(ore.digState.futureRefreshMillis)} &7刷新.",
-                    " "
-                )
-            )
-        }
-    }
-
-    /**
      * 生成矿物实体
      */
-    fun generateOreBlock(ore: Ore, state: OreState): Block? {
+    fun generateOreBlock(ore: Ore): Block? {
         if (ore.loc == null) {
             return null
         }
@@ -232,21 +173,23 @@ object KirraMinerAPI {
             block.type = Material.SKULL
         }
         val skull = createSkullBlock(ore.digMetadata.oreIndex, loc) ?: return null
-        generateHologram(ore, state)
         return skull.block
     }
 
-
     private fun createSkullBlock(id: String, loc: Location): Skull? {
         val skull = loc.block.state as Skull
-//        skull.skullType = SkullType.PLAYER
-        val skullTile = (skull.world as CraftWorld).handle
-            .getTileEntity(BlockPosition(skull.x, skull.y, skull.z)) as? TileEntitySkull ?: return null
-        skullTile.gameProfile = GameProfile(UUID.randomUUID(), null).apply {
-            properties.put("model", Property("model", "model: $id"))
-        }
-        skullTile.update()
+        skull.skullType = SkullType.PLAYER
         skull.update(true)
+        val skullTile = (skull.world as CraftWorld)
+            .handle
+            .getTileEntity(BlockPosition(skull.x, skull.y, skull.z)) as? TileEntitySkull ?: return null
+        val gameProfile = GameProfile(UUID.randomUUID(), "USELESS").also {
+            it.properties.put("textures", Property("", ""))
+            it.properties.put("model", Property("model", "model: $id"))
+        }
+        skullTile.gameProfile = gameProfile
+        skullTile.update()
+        skull.block.state.update()
         return skull
     }
 }
