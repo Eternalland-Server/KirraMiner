@@ -7,6 +7,8 @@ import net.sakuragame.eternal.justmessage.api.MessageAPI
 import org.apache.commons.lang3.time.DateFormatUtils
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Material
+import org.bukkit.block.Block
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Item
@@ -16,6 +18,10 @@ import org.bukkit.event.entity.EntityPickupItemEvent
 import taboolib.module.nms.sendPacket
 import taboolib.platform.util.giveItem
 import taboolib.platform.util.isAir
+
+fun Block.remove() {
+    type = Material.AIR
+}
 
 fun Location.parseToString(): String {
     return "${world.name}@$x@$y@$z@$yaw@$pitch"

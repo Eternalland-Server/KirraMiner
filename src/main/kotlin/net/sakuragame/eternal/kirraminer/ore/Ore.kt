@@ -1,59 +1,32 @@
 package net.sakuragame.eternal.kirraminer.ore
 
 import eu.decentsoftware.holograms.api.holograms.Hologram
-import net.sakuragame.eternal.kirraminer.*
+import net.sakuragame.eternal.kirraminer.KirraMinerAPI
+import net.sakuragame.eternal.kirraminer.collectItem
 import net.sakuragame.eternal.kirraminer.event.MineEndEvent
-import net.sakuragame.eternal.kirraminer.event.MineStartEvent
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
+import net.sakuragame.eternal.kirraminer.printToConsole
+import net.sakuragame.eternal.kirraminer.remove
 import org.bukkit.Location
 import org.bukkit.Sound
-import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.submit
-import taboolib.module.chat.colored
-import taboolib.platform.util.asLangText
 
-data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refreshTime: IntInterval, val digState: DigState, var digMetadata: DigMetadata, var hologram: Hologram? = null) {
+data class Ore(
+    val id: String,
+    val isTemp: Boolean = false,
+    val loc: Location?,
+    val refreshTime: IntInterval,
+    val digState: DigState,
+    var digMetadata: DigMetadata,
+    var hologram: Hologram? = null
+) {
 
-    fun dig(player: Player, profile: Profile) {
-        MineStartEvent(player, this).call()
-        val maxDigTime = digMetadata.digTime
-        digState.isDigging = true
-        profile.startDigging(this)
-        submit(async = true, delay = 3L) {
-            KirraMinerAPI.generateHologram(this@Ore, OreState.DIGGING, profile)
-        }
-        submit(async = true, delay = 5L, period = 10L) {
-            if (!player.isOnline) {
-                cancel()
-                return@submit
-            }
-            val targetedEntity = player.getLookingEntity(3.0)
-            if (targetedEntity == null || targetedEntity.type != EntityType.ARMOR_STAND || targetedEntity.location.distance(player.location) > 4) {
-                if (profile.digTime > 0.0) {
-                    player.playSound(player.location, Sound.BLOCK_NOTE_BASS, 1f, 1.5f)
-                    player.sendTitle("", "&c&l结束挖矿! &4&l✘".colored(), 0, 30, 0)
-                    player.sendActionMessage(player.asLangText("message-player-not-target-ore"))
-                }
-                digState.isDigging = false
-                KirraMinerAPI.generateHologram(this@Ore, OreState.IDLE, profile)
-                profile.reset()
-                cancel()
-                return@submit
-            }
-            profile.digTime += 0.5
-            player.swingHand()
-            player.sendTitle("", getProgressBar(profile), 0, 40, 0)
-            player.playSound(player.location, Sound.BLOCK_STONE_STEP, 1f, 1.5f)
-            refreshHologram(profile)
-            if (profile.digTime >= maxDigTime) {
-                doAfterDig(player, profile)
-                cancel()
-                return@submit
-            }
-        }
+    fun afterDig(player: Player) {
+        doAfterDig(player)
+        player.playSound(player.location, Sound.BLOCK_STONE_STEP, 1f, 1.5f)
     }
 
     fun refresh() {
@@ -64,8 +37,7 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
         printToConsole("刷新完毕.")
     }
 
-    private fun doAfterDig(player: Player, profile: Profile) {
-        player.sendTitle("", "&a&l挖掘完毕. &2&l✓".colored(), 0, 15, 0)
+    private fun doAfterDig(player: Player) {
         submit(delay = 2L) {
             player.playSound(player.location, Sound.BLOCK_ANVIL_BREAK, 1f, 1.5f)
         }
@@ -73,14 +45,12 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
             player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f)
         }
         giveResult(player)
-        KirraMinerAPI.generateHologram(this, OreState.FINAL, profile)
+        KirraMinerAPI.generateHologram(this, OreState.FINAL)
         submit(async = false, delay = 10L) {
             init(after = true)
         }
-        digState.isDigging = false
         digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
         digState.isRefreshing = true
-        profile.reset()
     }
 
     private fun giveResult(player: Player) {
@@ -102,29 +72,18 @@ data class Ore(val id: String, val isTemp: Boolean, val loc: Location?, val refr
         }
     }
 
-    private fun refreshHologram(profile: Profile) {
-        hologram?.let {
-            it.getPage(0).getLine(2).text = "&8( ${profile.getDiggingProgressBar() ?: ""} &8)".colored()
-        }
-    }
-
-    private fun getProgressBar(profile: Profile): String {
-        val bar = profile.getDiggingProgressBar()
-        return "&6&l挖掘进度: &8( $bar &8)".colored()
-    }
-
     private fun init(after: Boolean = false) {
         digMetadata = KirraMinerAPI.getWeightRandomMetadataByID(id)!!
         val state = when (after) {
             true -> OreState.COOLDOWN
             false -> OreState.IDLE
         }
-        if (digState.entity != null) {
-            digState.entity?.remove()
-            digState.entity = null
+        if (digState.block != null) {
+            digState.block?.remove()
+            digState.block = null
         }
         submit(async = false) {
-            digState.entity = KirraMinerAPI.generateOreEntity(this@Ore, state)
+            digState.block = KirraMinerAPI.generateOreBlock(this@Ore, state)
         }
     }
 

@@ -1,6 +1,10 @@
 package net.sakuragame.eternal.kirraminer
 
+import com.mojang.authlib.GameProfile
+import com.mojang.authlib.properties.Property
 import eu.decentsoftware.holograms.api.DHAPI
+import net.minecraft.server.v1_12_R1.BlockPosition
+import net.minecraft.server.v1_12_R1.TileEntitySkull
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
@@ -9,11 +13,13 @@ import net.sakuragame.eternal.kirraminer.ore.OreState.*
 import net.sakuragame.eternal.waypoints.api.WaypointsAPI
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.World
+import org.bukkit.block.Block
+import org.bukkit.block.Skull
+import org.bukkit.craftbukkit.v1_12_R1.CraftWorld
 import org.bukkit.entity.ArmorStand
-import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
-import org.bukkit.metadata.FixedMetadataValue
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.module.chat.uncolored
@@ -21,10 +27,9 @@ import taboolib.platform.util.title
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
-
-    const val MINE_ENTITY_IDENTIFIER = "KIRRAMINER_ENTITY"
 
     val ores = ConcurrentHashMap<String, Ore>()
 
@@ -54,12 +59,11 @@ object KirraMinerAPI {
     fun getNearestOreOfPlayer(player: Player, id: String): Ore? {
         val ore = ores.values
             .filter { it.loc != null }
-            .filter { it.digMetadata.digEntityName.idle.contains(id) }
-            .filter { !it.digState.isRefreshing && !it.digState.isDigging }
+            .filter { !it.digState.isRefreshing }
             .minByOrNull { it.loc!!.distanceSquared(player.location) } ?: return null
         val loc = ore.loc!!.clone().add(0.0, 2.0, 1.0)
-        WaypointsAPI.navPointer(player, "ore", loc, 5.0, listOf(ore.digMetadata.digEntityName.idle))
-        player.title("", "&e&l已为您展示距离您最近的${ore.digMetadata.digEntityName.idle}坐标".colored(), 10, 20, 5)
+        WaypointsAPI.navPointer(player, "ore", loc, 5.0, listOf(ore.digMetadata.entityName))
+        player.title("", "&e&l已为您展示距离您最近的${ore.digMetadata.entityName}坐标".colored(), 10, 20, 5)
         return ore
     }
 
@@ -83,10 +87,11 @@ object KirraMinerAPI {
      *
      * @param id
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun removeOre(id: String) {
         val ore = ores[id] ?: return
         ore.hologram?.destroy()
-        ore.digState.entity?.remove()
+        ore.digState.block?.remove()
         ores.remove(id)
     }
 
@@ -98,9 +103,9 @@ object KirraMinerAPI {
     fun removeAllOresInWorld(world: World) {
         val armorStands = world.entities.filterIsInstance<ArmorStand>()
         val worldUid = armorStands.getOrNull(0)?.world?.uid ?: return
-        KirraMinerAPI.ores.forEach { (id, ore) ->
+        ores.forEach { (id, ore) ->
             if (ore.loc?.world?.uid == worldUid) {
-                KirraMinerAPI.removeOre(id)
+                removeOre(id)
             }
         }
     }
@@ -124,20 +129,20 @@ object KirraMinerAPI {
             isTemp = true,
             loc = loc,
             digMetadata = weightedMeta,
-            digState = DigState(entity = null, isDigging = false, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())
+            digState = DigState(block = null, isRefreshing = false, futureRefreshMillis = System.currentTimeMillis())
         )
         addOre(id, ore)
         return true
     }
 
     /**
-     * 根据生物 UUID 获取相应的矿物实例
+     * 根据坐标获取相应的矿物实例
      *
-     * @param uuid 生物 UUID
+     * @param loc 坐标
      * @return 矿物实例
      */
-    fun getOreByEntityUUID(uuid: UUID): Ore? {
-        return ores.values.find { it.digState.entity?.uniqueId == uuid }
+    fun getOreByLocation(loc: Location): Ore? {
+        return ores.values.find { it.loc?.equals(loc) ?: false }
     }
 
     /**
@@ -157,10 +162,7 @@ object KirraMinerAPI {
     }
 
     /**
-     * 根据 ID 来获取权重挖掘元数据
-     *
-     * @param id 字符串
-     * @return 挖掘元数据
+     * 获取权重挖掘元数据
      */
     fun getWeightRandomMetadataByID(id: String): DigMetadata? {
         val metadataList = oreMetadataMap[id] ?: return null
@@ -172,12 +174,9 @@ object KirraMinerAPI {
     }
 
     /**
-     * 生成全息实体.
-     * @param ore 矿物实例
-     * @param state 矿物状态
-     * @param profile 玩家档案
+     * 生成全息实体
      */
-    fun generateHologram(ore: Ore, state: OreState, profile: Profile?) {
+    fun generateHologram(ore: Ore, state: OreState) {
         if (ore.loc == null) {
             return
         }
@@ -192,7 +191,7 @@ object KirraMinerAPI {
             IDLE -> DHAPI.createHologram(
                 uuid, ore.loc.clone().add(0.0, 3.4, 0.0), listOf(
                     iconStr,
-                    "&f&l${ore.digMetadata.digEntityName.idle}",
+                    "&f&l${ore.digMetadata.entityName}",
                     "&7矿镐要求等级: &f${ore.digMetadata.digLevel}",
                     "",
                     "&7掉落物品: ",
@@ -200,14 +199,7 @@ object KirraMinerAPI {
                     ""
                 )
             )
-            DIGGING -> DHAPI.createHologram(
-                uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
-                listOf(
-                    iconStr,
-                    "&7正在收集... &f[${profile!!.player.name}]",
-                    "&8( ${profile.getDiggingProgressBar() ?: ""} &8)"
-                )
-            )
+
             FINAL -> DHAPI.createHologram(
                 uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
                 listOf(
@@ -216,6 +208,7 @@ object KirraMinerAPI {
                     " "
                 )
             )
+
             COOLDOWN -> DHAPI.createHologram(
                 uuid, ore.loc.clone().add(0.0, 2.5, 0.0),
                 listOf(
@@ -229,22 +222,31 @@ object KirraMinerAPI {
     }
 
     /**
-     * 生成一个矿物实体
-     *
-     * @param ore 矿物实例
-     * @return 实体实例
+     * 生成矿物实体
      */
-    fun generateOreEntity(ore: Ore, state: OreState): ArmorStand? {
+    fun generateOreBlock(ore: Ore, state: OreState): Block? {
         if (ore.loc == null) {
             return null
         }
-        val loc = ore.loc.clone()
-        val armorStand = (loc.world.spawnEntity(loc, EntityType.ARMOR_STAND) as ArmorStand).also {
-            it.setGravity(false)
-            it.customName = "&8&l&o${state.getString(ore)}@*".colored()
-            it.setMetadata(MINE_ENTITY_IDENTIFIER, FixedMetadataValue(KirraMiner.plugin, ""))
+        val loc = ore.loc.clone().apply {
+            block.type = Material.SKULL
         }
-        generateHologram(ore, state, null)
-        return armorStand
+        val skull = createSkullBlock(ore.digMetadata.oreIndex, loc) ?: return null
+        generateHologram(ore, state)
+        return skull.block
+    }
+
+
+    private fun createSkullBlock(id: String, loc: Location): Skull? {
+        val skull = loc.block.state as Skull
+//        skull.skullType = SkullType.PLAYER
+        val skullTile = (skull.world as CraftWorld).handle
+            .getTileEntity(BlockPosition(skull.x, skull.y, skull.z)) as? TileEntitySkull ?: return null
+        skullTile.gameProfile = GameProfile(UUID.randomUUID(), null).apply {
+            properties.put("model", Property("model", "model: $id"))
+        }
+        skullTile.update()
+        skull.update(true)
+        return skull
     }
 }

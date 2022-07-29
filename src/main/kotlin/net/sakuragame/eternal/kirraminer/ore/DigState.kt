@@ -1,5 +1,5 @@
 package net.sakuragame.eternal.kirraminer.ore
 
-import org.bukkit.entity.ArmorStand
+import org.bukkit.block.Block
 
-data class DigState(var entity: ArmorStand? = null, var isDigging: Boolean, var isRefreshing: Boolean, var futureRefreshMillis: Long)
+data class DigState(var block: Block? = null, var isRefreshing: Boolean, var futureRefreshMillis: Long)
