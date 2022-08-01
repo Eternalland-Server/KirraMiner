@@ -1,1 +1,8 @@
 settings:
+  pickaxe:
+    irony_pickaxe:
+      level: 1
+    copper_pickaxe:
+      level: 2
+    alloy_pickaxe:
+      level: 3

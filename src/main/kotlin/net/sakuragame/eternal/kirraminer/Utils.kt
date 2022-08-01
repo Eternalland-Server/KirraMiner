@@ -54,7 +54,12 @@ fun getPickaxeLevel(player: Player): Int? {
     if (itemStream.isVanilla()) {
         return null
     }
-    return itemStream.getZaphkielData().getDeep("pickaxe.level")?.asInt() ?: return null
+    val name = itemStream.getZaphkielName()
+    val pickaxeLevel = KirraMiner.conf.getInt("settings.pickaxe.$name.level")
+    if (pickaxeLevel == 0) {
+        return null
+    }
+    return pickaxeLevel
 }
 
 @Suppress("SpellCheckingInspection")
