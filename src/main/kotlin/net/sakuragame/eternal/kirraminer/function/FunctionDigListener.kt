@@ -2,7 +2,7 @@ package net.sakuragame.eternal.kirraminer.function
 
 import net.sakuragame.eternal.kirraminer.KirraMinerAPI
 import net.sakuragame.eternal.kirraminer.getPickaxeLevel
-import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.Material
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
@@ -12,7 +12,17 @@ object FunctionDigListener {
 
     @SubscribeEvent
     fun e(e: PlayerItemHeldEvent) {
-        Bukkit.broadcastMessage("reached 1")
+        val player = e.player
+        if (player.gameMode == GameMode.CREATIVE) {
+            return
+        }
+        val item = player.inventory.getItem(e.newSlot)
+        val heldPickaxe = getPickaxeLevel(item) != null
+        when {
+            player.gameMode == GameMode.ADVENTURE && heldPickaxe -> player.gameMode = GameMode.SURVIVAL
+            player.gameMode == GameMode.SURVIVAL && !heldPickaxe -> player.gameMode = GameMode.ADVENTURE
+            else -> return
+        }
     }
 
     @SubscribeEvent

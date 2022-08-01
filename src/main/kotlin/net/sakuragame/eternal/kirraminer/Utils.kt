@@ -15,6 +15,7 @@ import org.bukkit.entity.Item
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityPickupItemEvent
+import org.bukkit.inventory.ItemStack
 import taboolib.module.nms.sendPacket
 import taboolib.platform.util.giveItem
 import taboolib.platform.util.isAir
@@ -46,8 +47,11 @@ fun getTextureDate(date: Long): String {
 }
 
 fun getPickaxeLevel(player: Player): Int? {
-    val item = player.inventory.itemInMainHand
-    if (item.isAir()) {
+    return getPickaxeLevel(player.inventory.itemInMainHand)
+}
+
+fun getPickaxeLevel(item: ItemStack?): Int? {
+    if (item == null || item.isAir()) {
         return null
     }
     val itemStream = ZaphkielAPI.read(item)
