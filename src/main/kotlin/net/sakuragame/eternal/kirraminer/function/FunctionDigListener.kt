@@ -17,10 +17,10 @@ object FunctionDigListener {
             return
         }
         val item = player.inventory.getItem(e.newSlot)
-        val heldPickaxe = getPickaxeLevel(item) != null
+        val pickaxeHeld = getPickaxeLevel(item) != null
         when {
-            player.gameMode == GameMode.ADVENTURE && heldPickaxe -> player.gameMode = GameMode.SURVIVAL
-            player.gameMode == GameMode.SURVIVAL && !heldPickaxe -> player.gameMode = GameMode.ADVENTURE
+            player.gameMode == GameMode.ADVENTURE && pickaxeHeld -> player.gameMode = GameMode.SURVIVAL
+            player.gameMode == GameMode.SURVIVAL && !pickaxeHeld -> player.gameMode = GameMode.ADVENTURE
             else -> return
         }
     }
@@ -36,6 +36,6 @@ object FunctionDigListener {
         }
         e.isCancelled = true
         e.block.type = Material.AIR
-        ore.afterDig(player)
+        ore.afterDig(player, player.inventory.itemInMainHand)
     }
 }

@@ -4,6 +4,8 @@ import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
 import net.minecraft.server.v1_12_R1.BlockPosition
 import net.minecraft.server.v1_12_R1.TileEntitySkull
+import net.sakuragame.eternal.gemseconomy.api.GemsEconomyAPI
+import net.sakuragame.eternal.gemseconomy.currency.EternalCurrency
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
@@ -14,6 +16,7 @@ import org.bukkit.block.Skull
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import taboolib.common5.RandomList
 import taboolib.module.chat.colored
 import taboolib.platform.util.title
@@ -23,6 +26,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
+
+    enum class FixResult {
+        MATCH_FAILED, DURABILITY_ALREADY_FULL, COINS_NOT_ENOUGH, SUCCESS
+    }
 
     val ores = ConcurrentHashMap<String, Ore>()
 
@@ -42,6 +49,43 @@ object KirraMinerAPI {
         }
         return null
     }
+
+    /**
+     * 检查矿镐是否能修复，并进行扣款操作
+     *
+     * @param player 玩家
+     * @param item 物品
+     * @return 结果
+     */
+    fun checkPickaxeFixAndCost(player: Player, item: ItemStack): FixResult {
+        val name = item.getZaphkielName() ?: return FixResult.MATCH_FAILED
+        val maxDurability = getPickaxeMaxDurability(name) ?: return FixResult.MATCH_FAILED
+        val durability = getPickaxeDurability(item) ?: return FixResult.MATCH_FAILED
+        if (durability == maxDurability) {
+            return FixResult.DURABILITY_ALREADY_FULL
+        }
+        val withDrawCoins = KirraMiner.conf.getInt("settings.fix-per-coin.$name") * (maxDurability - durability)
+        val bal = GemsEconomyAPI.getBalance(player.uniqueId, EternalCurrency.Coins)
+        if (bal < withDrawCoins) {
+            return FixResult.COINS_NOT_ENOUGH
+        }
+        GemsEconomyAPI.withdraw(player.uniqueId, withDrawCoins.toDouble(), "修复镐子扣款")
+        return FixResult.SUCCESS
+    }
+
+    /**
+     * 执行矿镐修复方法
+     *
+     * @param player 玩家
+     * @param item 物品
+     * @return 修复完成的物品
+     */
+    fun fixPickaxe(player: Player, item: ItemStack): ItemStack? {
+        val name = item.getZaphkielName() ?: return null
+        val maxDurability = getPickaxeMaxDurability(name) ?: return null
+        return setPickaxeDurability(player, item, maxDurability)
+    }
+
 
     /**
      * 获取离玩家最近的矿石
@@ -183,7 +227,7 @@ object KirraMinerAPI {
         val skullTile = (skull.world as CraftWorld)
             .handle
             .getTileEntity(BlockPosition(skull.x, skull.y, skull.z)) as? TileEntitySkull ?: return null
-        val gameProfile = GameProfile(UUID.randomUUID(), "USELESS").also {
+        val gameProfile = GameProfile(UUID.randomUUID(), "").also {
             it.properties.put("textures", Property("", ""))
             it.properties.put("model", Property("model", "model: $id"))
         }

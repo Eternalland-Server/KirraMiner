@@ -35,15 +35,16 @@ repositories {
     }
     maven { url = uri("https://jitpack.io") }
     maven { url = uri("https://repo.tabooproject.org/repository/maven-releases/") }
-    maven { url = uri("https://lss233.littleservice.cn/repositories/minecraft/") }
+    maven { url = uri("https://maven.fastmirror.net/repositories/minecraft/") }
     mavenCentral()
 }
 
 dependencies {
     compileOnly("net.sakuragame.eternal:Waypoints:1.0.0-SNAPSHOT@jar")
     compileOnly("com.github.decentsoftware-eu:decentholograms:2.3.1")
-    compileOnly("ink.ptms:Zaphkiel:1.7.6@jar")
+    compileOnly("net.sakuragame.eternal:JustLevel:1.1.8-SNAPSHOT@jar")
     compileOnly("net.sakuragame.eternal:JustMessage:1.0.4-SNAPSHOT@jar")
+    compileOnly("net.sakuragame.eternal:GemsEconomy:4.9.5-SNAPSHOT@jar")
     compileOnly("org.spigotmc:spigot:1.12.2-R0.1-SNAPSHOT")
     compileOnly(kotlin("stdlib"))
     compileOnly(fileTree("libs"))

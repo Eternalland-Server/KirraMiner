@@ -48,11 +48,14 @@ object Loader {
                 val digLevel = conf.getInt("$it.metadata-list.$section.dig-level")
                 val digTime = conf.getInt("$it.metadata-list.$section.dig-time")
                 val digResult = DigResult.fromString(conf.getString("$it.metadata-list.$section.dig-result") ?: return@metaForeach) ?: return@metaForeach
-                digMetadataList += DigMetadata(weight, oreIndex, name, digLevel, digTime, digResult)
+                val providedExp = KirraMiner.conf.getDouble("settings.exp.$section")
+                val costDurability = KirraMiner.conf.getIntRange("settings.cost-durability.$section") ?: 1..1
+                digMetadataList += DigMetadata(weight, oreIndex, name, digLevel, digTime, digResult, providedExp, costDurability)
             }
             KirraMinerAPI.oreMetadataMap[it] = digMetadataList
             val meta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
-            val ore = Ore(id = it,
+            val ore = Ore(
+                id = it,
                 isTemp = false,
                 loc = loc,
                 refreshTime = refreshTime,
@@ -61,5 +64,10 @@ object Loader {
             )
             KirraMinerAPI.addOre(ore.id, ore)
         }
+    }
+
+    private fun Configuration.getIntRange(path: String): IntRange? {
+        val split = getString(path)?.split("..") ?: return null
+        return split[0].toInt()..split[1].toInt()
     }
 }

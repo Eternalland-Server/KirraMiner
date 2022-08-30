@@ -1,14 +1,14 @@
 package net.sakuragame.eternal.kirraminer.ore
 
-import net.sakuragame.eternal.kirraminer.KirraMinerAPI
-import net.sakuragame.eternal.kirraminer.collectItem
+import net.sakuragame.eternal.justlevel.api.JustLevelAPI
+import net.sakuragame.eternal.kirraminer.*
 import net.sakuragame.eternal.kirraminer.event.MineEndEvent
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
-import net.sakuragame.eternal.kirraminer.printToConsole
-import net.sakuragame.eternal.kirraminer.remove
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.function.submit
@@ -22,20 +22,11 @@ data class Ore(
     var digMetadata: DigMetadata,
 ) {
 
-    fun afterDig(player: Player) {
-        doAfterDig(player)
-        player.playSound(player.location, Sound.BLOCK_STONE_STEP, 1f, 1.5f)
-    }
-
-    fun refresh() {
-        printToConsole("开始刷新矿物: $id...")
-        digState.isRefreshing = false
-        digState.futureRefreshMillis = System.currentTimeMillis()
-        init()
-        printToConsole("刷新完毕.")
-    }
-
-    private fun doAfterDig(player: Player) {
+    fun afterDig(player: Player, item: ItemStack) {
+        val costResult = costDurability(player, item)
+        if (!costResult) {
+            return
+        }
         submit(delay = 2L) {
             player.playSound(player.location, Sound.BLOCK_ANVIL_BREAK, 1f, 1.5f)
         }
@@ -45,6 +36,33 @@ data class Ore(
         giveResult(player)
         digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
         digState.isRefreshing = true
+        player.playSound(player.location, Sound.BLOCK_STONE_STEP, 1f, 1.5f)
+    }
+
+    private fun costDurability(player: Player, item: ItemStack): Boolean {
+        val costDurability = digMetadata.costDurability
+            .random()
+            .coerceAtLeast(1)
+        val durability = getPickaxeDurability(item)?.minus(costDurability) ?: return false
+        if (durability < 1) {
+            player.playSound(player.location, Sound.ENTITY_ITEM_BREAK, 1f, 1.5f)
+            player.inventory.itemInMainHand = ItemStack(Material.AIR)
+            return true
+        }
+        val newItem = setPickaxeDurability(player, item, durability) ?: return false
+        val durabilityOnItem = getPickaxeDurabilityOnItem(durability, newItem)?.toShort() ?: return false
+        player.inventory.itemInMainHand = newItem
+        submit(async = false, delay = 3L) {
+            player.inventory.itemInMainHand.durability = durabilityOnItem
+            player.updateInventory()
+        }
+        return true
+    }
+
+    fun refresh() {
+        digState.isRefreshing = false
+        digState.futureRefreshMillis = System.currentTimeMillis()
+        init()
     }
 
     private fun giveResult(player: Player) {
@@ -63,6 +81,11 @@ data class Ore(
                 player.collectItem(droppedItem)
                 droppedItem.remove()
             }
+            val providedExp = digMetadata.providedExp
+            if (providedExp <= 0) {
+                return@submit
+            }
+            JustLevelAPI.addExp(player.uniqueId, providedExp)
         }
     }
 

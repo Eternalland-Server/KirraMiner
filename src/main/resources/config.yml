@@ -1,8 +1,23 @@
 settings:
   pickaxe:
-    irony_pickaxe:
-      level: 1
     copper_pickaxe:
-      level: 2
+      level: 1
+      max-durability: 10
     alloy_pickaxe:
+      level: 2
+      max-durability: 10
+    irony_pickaxe:
       level: 3
+      max-durability: 10
+  exp:
+    crudes_iron: 10
+    crudes_copper: 10
+    crudes_phosphorus: 10
+  cost-durability:
+    crudes_iron: 1
+    crudes_copper: 1
+    crudes_phosphorus: 1
+  fix-per-coin:
+    copper_pickaxe: 100
+    alloy_pickaxe: 100
+    irony_pickaxe: 100
