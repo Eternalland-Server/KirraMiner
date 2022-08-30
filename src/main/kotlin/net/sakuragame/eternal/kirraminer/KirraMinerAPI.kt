@@ -4,8 +4,6 @@ import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
 import net.minecraft.server.v1_12_R1.BlockPosition
 import net.minecraft.server.v1_12_R1.TileEntitySkull
-import net.sakuragame.eternal.gemseconomy.api.GemsEconomyAPI
-import net.sakuragame.eternal.gemseconomy.currency.EternalCurrency
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
@@ -27,10 +25,6 @@ import java.util.concurrent.ConcurrentHashMap
 @Suppress("SpellCheckingInspection")
 object KirraMinerAPI {
 
-    enum class FixResult {
-        MATCH_FAILED, DURABILITY_ALREADY_FULL, COINS_NOT_ENOUGH, SUCCESS
-    }
-
     val ores = ConcurrentHashMap<String, Ore>()
 
     val oreMetadataMap = mutableMapOf<String, List<DigMetadata>>()
@@ -51,26 +45,20 @@ object KirraMinerAPI {
     }
 
     /**
-     * 检查矿镐是否能修复，并进行扣款操作
+     * 检查矿镐是否能修复
      *
      * @param player 玩家
      * @param item 物品
      * @return 结果
      */
-    fun checkPickaxeFixAndCost(player: Player, item: ItemStack): FixResult {
-        val name = item.getZaphkielName() ?: return FixResult.MATCH_FAILED
-        val maxDurability = getPickaxeMaxDurability(name) ?: return FixResult.MATCH_FAILED
-        val durability = getPickaxeDurability(item) ?: return FixResult.MATCH_FAILED
+    fun checkPickaxeFixAndCost(player: Player, item: ItemStack): Int {
+        val name = item.getZaphkielName() ?: return -1
+        val maxDurability = getPickaxeMaxDurability(name) ?: return -1
+        val durability = getPickaxeDurability(item) ?: return -1
         if (durability == maxDurability) {
-            return FixResult.DURABILITY_ALREADY_FULL
+            return -1
         }
-        val withDrawCoins = KirraMiner.conf.getInt("settings.fix-per-coin.$name") * (maxDurability - durability)
-        val bal = GemsEconomyAPI.getBalance(player.uniqueId, EternalCurrency.Coins)
-        if (bal < withDrawCoins) {
-            return FixResult.COINS_NOT_ENOUGH
-        }
-        GemsEconomyAPI.withdraw(player.uniqueId, withDrawCoins.toDouble(), "修复镐子扣款")
-        return FixResult.SUCCESS
+        return KirraMiner.conf.getInt("settings.fix-per-coin.$name") * (maxDurability - durability)
     }
 
     /**
@@ -85,7 +73,6 @@ object KirraMinerAPI {
         val maxDurability = getPickaxeMaxDurability(name) ?: return null
         return setPickaxeDurability(player, item, maxDurability)
     }
-
 
     /**
      * 获取离玩家最近的矿石
