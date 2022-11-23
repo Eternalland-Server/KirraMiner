@@ -1,7 +1,6 @@
 package net.sakuragame.eternal.kirraminer
 
 import net.sakuragame.eternal.kirraminer.ore.DigMetadata
-import net.sakuragame.eternal.kirraminer.ore.DigResult
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.kirraminer.ore.sub.IntInterval
@@ -21,7 +20,6 @@ object Loader {
     @Awake(LifeCycle.ENABLE)
     fun i() {
         printToConsole("-- 正在加载矿物信息.")
-        KirraMinerAPI.recycleAllOres()
         KirraMinerAPI.ores.clear()
         KirraMinerAPI.oreMetadataMap.clear()
         if (!folder.exists()) {
@@ -43,15 +41,14 @@ object Loader {
             val metadataSection = conf.getConfigurationSection("$it.metadata-list") ?: return@forEach
             metadataSection.getKeys(false).forEach metaForeach@{ section ->
                 val weight = conf.getInt("$it.metadata-list.$section.weight")
-                val oreIndex = conf.getString("$it.metadata-list.$section.ore-index") ?: return@metaForeach
-                val name = conf.getString("$it.metadata-list.$section.name") ?: return@metaForeach
-                val digLevel = conf.getInt("$it.metadata-list.$section.dig-level")
-                val digTime = conf.getInt("$it.metadata-list.$section.dig-time")
-                val digResult = DigResult.fromString(conf.getString("$it.metadata-list.$section.dig-result") ?: return@metaForeach) ?: return@metaForeach
-                val providedExp = KirraMiner.conf.getDouble("settings.exp.$section")
-                val costDurability = KirraMiner.conf.getIntRange("settings.cost-durability.$section") ?: 1..1
-                digMetadataList += DigMetadata(weight, oreIndex, name, digLevel, digTime, digResult, providedExp, costDurability)
+                val name = KirraMiner.conf.getString("settings.ores.$section.name") ?: return@metaForeach
+                val oreIndex = KirraMiner.conf.getString("settings.ores.$section.index") ?: return@metaForeach
+                val dropItem = KirraMiner.conf.getString("settings.ores.$section.drop") ?: return@metaForeach
+                val costDurability = KirraMiner.conf.getIntRange("settings.ores.$section.cost-durability") ?: 1..1
+                val providedExp = KirraMiner.conf.getIntRange("settings.ores.$section.provided-exp") ?: 0..0
+                digMetadataList += DigMetadata(section, weight, name, oreIndex, dropItem, costDurability, providedExp)
             }
+
             KirraMinerAPI.oreMetadataMap[it] = digMetadataList
             val meta = KirraMinerAPI.getWeightRandomMetadataByID(it) ?: return@forEach
             val ore = Ore(
@@ -64,10 +61,5 @@ object Loader {
             )
             KirraMinerAPI.addOre(ore.id, ore)
         }
-    }
-
-    private fun Configuration.getIntRange(path: String): IntRange? {
-        val split = getString(path)?.split("..") ?: return null
-        return split[0].toInt()..split[1].toInt()
     }
 }

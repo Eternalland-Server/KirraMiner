@@ -14,10 +14,15 @@ import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.inventory.ItemStack
+import taboolib.module.configuration.Configuration
 import taboolib.module.nms.sendPacket
 import taboolib.platform.util.giveItem
 import taboolib.platform.util.isAir
-import kotlin.math.roundToInt
+
+fun Configuration.getIntRange(path: String): IntRange? {
+    val split = getString(path)?.split("..") ?: return null
+    return split[0].toInt()..split[1].toInt()
+}
 
 fun Block.remove() {
     type = Material.AIR
@@ -58,19 +63,6 @@ fun ItemStack?.getZaphkielName(): String? {
     return itemStream.getZaphkielName()
 }
 
-fun getPickaxeLevel(player: Player): Int? {
-    return getPickaxeLevel(player.inventory.itemInMainHand)
-}
-
-fun getPickaxeLevel(item: ItemStack?): Int? {
-    val name = item.getZaphkielName() ?: return null
-    val pickaxeLevel = KirraMiner.conf.getInt("settings.pickaxe.$name.level")
-    if (pickaxeLevel == 0) {
-        return null
-    }
-    return pickaxeLevel
-}
-
 fun getPickaxeDurability(item: ItemStack?): Int? {
     val itemStream = item.getStream() ?: return null
     return itemStream.getZaphkielData().getDeep("pickaxe.durability")?.asInt() ?: return null
@@ -87,15 +79,18 @@ fun getPickaxeMaxDurability(item: ItemStack?): Int? {
     return KirraMiner.conf.getInt("settings.pickaxe.$name.max-durability")
 }
 
-fun getPickaxeMaxDurability(name: String): Int? {
+fun getPickaxeMaxDurability(name: String): Int {
     return KirraMiner.conf.getInt("settings.pickaxe.$name.max-durability")
 }
 
-fun getPickaxeDurabilityOnItem(durability: Int, item: ItemStack): Int? {
+fun getPickaxeDurabilityOnItem(item: ItemStack, durability: Int? = getPickaxeDurability(item)): Short? {
+    if (durability == null) {
+        return null
+    }
     val itemMaxDurability = item.type.maxDurability.toDouble()
     val maxDurability = getPickaxeMaxDurability(item)?.toDouble() ?: return null
     val percent = durability / maxDurability
-    return (itemMaxDurability - (itemMaxDurability * percent)).roundToInt()
+    return (itemMaxDurability - (itemMaxDurability * percent)).toInt().toShort()
 }
 
 @Suppress("SpellCheckingInspection")

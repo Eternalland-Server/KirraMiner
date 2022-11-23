@@ -1,23 +1,120 @@
 settings:
+  ores:
+    crudes_iron:
+      name: "铁矿"
+      index: 100
+      drop: "crudes_phosphorus_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_copper:
+      name: "铜矿"
+      index: 101
+      drop: "crudes_copper_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_phosphorus:
+      name: "磷矿"
+      index: 102
+      drop: "crudes_phosphorus_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_plumbum:
+      name: "铅矿"
+      index: 103
+      drop: "crudes_plumbum_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_aluminum:
+      name: "铝矿"
+      index: 104
+      drop: "crudes_aluminum_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_stibium:
+      name: "锑矿"
+      index: 105
+      drop: "crudes_stibium_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_crystal:
+      name: "红水晶矿"
+      index: 106
+      drop: "crudes_crystal_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
+    crudes_bloodstone:
+      name: "血玉矿"
+      index: 107
+      drop: "crudes_bloodstone_ore"
+      cost-durability: "1..1"
+      provided-exp: "1..10"
   pickaxe:
     copper_pickaxe:
-      level: 1
       max-durability: 10
+      dig-type:
+        - "ALL"
+      dig:
+        crudes_iron:
+          amount: "4..8"
+        crudes_copper:
+          amount: "4..8"
+        crudes_phosphorus:
+          amount: "3..6"
+        crudes_plumbum:
+          amount: "3..6"
+        crudes_aluminum:
+          amount: "2..4"
+        crudes_stibium:
+          amount: "2..4"
+        crudes_crystal:
+          amount: "1..2"
+        crudes_bloodstone:
+          amount: "1..2"
     alloy_pickaxe:
-      level: 2
       max-durability: 10
+      dig-type:
+        - "ALL"
+      dig:
+        crudes_iron:
+          amount: "4..8"
+        crudes_copper:
+          amount: "4..8"
+        crudes_phosphorus:
+          amount: "3..6"
+        crudes_plumbum:
+          amount: "3..6"
+        crudes_aluminum:
+          amount: "2..4"
+        crudes_stibium:
+          amount: "2..4"
+        crudes_crystal:
+          amount: "1..2"
+        crudes_bloodstone:
+          amount: "1..2"
     irony_pickaxe:
-      level: 3
       max-durability: 10
-  exp:
-    crudes_iron: 10
-    crudes_copper: 10
-    crudes_phosphorus: 10
-  cost-durability:
-    crudes_iron: 1
-    crudes_copper: 1
-    crudes_phosphorus: 1
+      dig-type:
+        - "ALL"
+      dig:
+        crudes_iron:
+          amount: "4..8"
+        crudes_copper:
+          amount: "4..8"
+        crudes_phosphorus:
+          amount: "3..6"
+        crudes_plumbum:
+          amount: "3..6"
+        crudes_aluminum:
+          amount: "2..4"
+        crudes_stibium:
+          amount: "2..4"
+        crudes_crystal:
+          amount: "1..2"
+        crudes_bloodstone:
+          amount: "1..2"
   fix-per-coin:
     copper_pickaxe: 100
     alloy_pickaxe: 100
     irony_pickaxe: 100
+  durability-lore:
+    - "&e耐久度: &f<durability> / <max-durability>"

@@ -8,7 +8,10 @@ import net.sakuragame.eternal.kirraminer.ore.DigMetadata
 import net.sakuragame.eternal.kirraminer.ore.DigState
 import net.sakuragame.eternal.kirraminer.ore.Ore
 import net.sakuragame.eternal.waypoints.api.WaypointsAPI
-import org.bukkit.*
+import org.bukkit.Location
+import org.bukkit.Material
+import org.bukkit.SkullType
+import org.bukkit.World
 import org.bukkit.block.Block
 import org.bukkit.block.Skull
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld
@@ -47,13 +50,12 @@ object KirraMinerAPI {
     /**
      * 检查矿镐是否能修复
      *
-     * @param player 玩家
      * @param item 物品
      * @return 结果
      */
-    fun checkPickaxeFixAndCost(player: Player, item: ItemStack): Int {
+    fun checkPickaxeFixAndCost(item: ItemStack): Int {
         val name = item.getZaphkielName() ?: return -1
-        val maxDurability = getPickaxeMaxDurability(name) ?: return -1
+        val maxDurability = getPickaxeMaxDurability(name)
         val durability = getPickaxeDurability(item) ?: return -1
         if (durability == maxDurability) {
             return -1
@@ -70,7 +72,7 @@ object KirraMinerAPI {
      */
     fun fixPickaxe(player: Player, item: ItemStack): ItemStack? {
         val name = item.getZaphkielName() ?: return null
-        val maxDurability = getPickaxeMaxDurability(name) ?: return null
+        val maxDurability = getPickaxeMaxDurability(name)
         return setPickaxeDurability(player, item, maxDurability)
     }
 
@@ -82,12 +84,13 @@ object KirraMinerAPI {
      */
     fun getNearestOreOfPlayer(player: Player, id: String): Ore? {
         val ore = ores.values
+            .filter { it.digMetadata.name == id }
             .filter { it.loc != null }
             .filter { !it.digState.isRefreshing }
             .minByOrNull { it.loc!!.distanceSquared(player.location) } ?: return null
         val loc = ore.loc!!.clone().add(0.0, 2.0, 1.0)
-        WaypointsAPI.navPointer(player, "ore", loc, 5.0, listOf(ore.digMetadata.entityName))
-        player.title("", "&e&l已为您展示距离您最近的${ore.digMetadata.entityName}坐标".colored(), 10, 20, 5)
+        WaypointsAPI.navPointer(player, "ore", loc, 5.0, listOf(ore.id))
+        player.title("", "&e&l已为您展示距离您最近的${id}坐标".colored(), 10, 20, 5)
         return ore
     }
 
@@ -169,19 +172,6 @@ object KirraMinerAPI {
     }
 
     /**
-     * 回收所有的矿物实体, 包括全息字
-     */
-    fun recycleAllOres() {
-        Bukkit.getWorlds().map { it.entities }.forEach {
-            it.filterIsInstance<ArmorStand>().forEach { entity ->
-                if (entity.customName.contains("@*")) {
-                    entity.remove()
-                }
-            }
-        }
-    }
-
-    /**
      * 获取权重挖掘元数据
      */
     fun getWeightRandomMetadataByID(id: String): DigMetadata? {
@@ -194,7 +184,7 @@ object KirraMinerAPI {
     }
 
     /**
-     * 生成矿物实体
+     * 生成矿物方块
      */
     fun generateOreBlock(ore: Ore): Block? {
         if (ore.loc == null) {
@@ -214,11 +204,10 @@ object KirraMinerAPI {
         val skullTile = (skull.world as CraftWorld)
             .handle
             .getTileEntity(BlockPosition(skull.x, skull.y, skull.z)) as? TileEntitySkull ?: return null
-        val gameProfile = GameProfile(UUID.randomUUID(), "").also {
+        skullTile.gameProfile = GameProfile(UUID.randomUUID(), id).also {
             it.properties.put("textures", Property("", ""))
             it.properties.put("model", Property("model", "model: $id"))
         }
-        skullTile.gameProfile = gameProfile
         skullTile.update()
         skull.block.state.update()
         return skull

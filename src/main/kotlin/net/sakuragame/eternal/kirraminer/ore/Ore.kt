@@ -22,7 +22,7 @@ data class Ore(
     var digMetadata: DigMetadata,
 ) {
 
-    fun afterDig(player: Player, item: ItemStack) {
+    fun afterDig(player: Player, item: ItemStack, loc: Location?, refresh: Boolean = true) {
         val costResult = costDurability(player, item)
         if (!costResult) {
             return
@@ -33,9 +33,11 @@ data class Ore(
         submit(delay = 5L) {
             player.playSound(player.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f)
         }
-        giveResult(player)
-        digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
-        digState.isRefreshing = true
+        giveResult(item, loc, player)
+        if (refresh && refreshTime.min != -1) {
+            digState.futureRefreshMillis = System.currentTimeMillis() + (refreshTime.random * 1000)
+            digState.isRefreshing = true
+        }
         player.playSound(player.location, Sound.BLOCK_STONE_STEP, 1f, 1.5f)
     }
 
@@ -44,13 +46,30 @@ data class Ore(
             .random()
             .coerceAtLeast(1)
         val durability = getPickaxeDurability(item)?.minus(costDurability) ?: return false
-        if (durability < 1) {
-            player.playSound(player.location, Sound.ENTITY_ITEM_BREAK, 1f, 1.5f)
-            player.inventory.itemInMainHand = ItemStack(Material.AIR)
-            return true
+        val pickaxeName = player.inventory.itemInMainHand.getZaphkielName() ?: return false
+        val digTypes = getDigTypes(pickaxeName)
+        val isInvalidMovement = !digTypes.contains("ALL") && !digTypes.contains(digMetadata.id)
+        when {
+            isInvalidMovement && durability < 1 -> {
+                submit(delay = 3L) {
+                    player.playSound(player.location, Sound.ITEM_SHIELD_BREAK, 1f, 1.5f)
+                }
+                removeItem(player)
+                return false
+            }
+            isInvalidMovement -> {
+                submit(delay = 3L) {
+                    player.playSound(player.location, Sound.ITEM_SHIELD_BREAK, 1f, 1.5f)
+                }
+                return false
+            }
+            durability < 1 -> {
+                removeItem(player)
+                return true
+            }
         }
         val newItem = setPickaxeDurability(player, item, durability) ?: return false
-        val durabilityOnItem = getPickaxeDurabilityOnItem(durability, newItem)?.toShort() ?: return false
+        val durabilityOnItem = getPickaxeDurabilityOnItem(newItem, durability) ?: return false
         player.inventory.itemInMainHand = newItem
         submit(async = false, delay = 3L) {
             player.inventory.itemInMainHand.durability = durabilityOnItem
@@ -59,21 +78,23 @@ data class Ore(
         return true
     }
 
+    private fun removeItem(player: Player) {
+        player.playSound(player.location, Sound.ENTITY_ITEM_BREAK, 1f, 1.5f)
+        player.inventory.itemInMainHand = ItemStack(Material.AIR)
+    }
+
     fun refresh() {
         digState.isRefreshing = false
         digState.futureRefreshMillis = System.currentTimeMillis()
         init()
     }
 
-    private fun giveResult(player: Player) {
-        // should not happen.
-        if (loc == null) {
-            return
-        }
+    private fun giveResult(item: ItemStack, loc: Location?, player: Player) {
+        val finalLocation = this.loc ?: (loc ?: return)
         submit(async = false) {
-            val itemStack = digMetadata.digResult.getResultItem(player) ?: return@submit
+            val itemStack = digMetadata.getResultItem(item) ?: return@submit
             MineEndEvent(player, this@Ore, itemStack).call()
-            val droppedItem = loc.world.dropItem(loc.clone().add(0.0, 0.6, 0.0), itemStack).apply {
+            val droppedItem = finalLocation.world.dropItem(finalLocation.clone().add(0.0, 0.6, 0.0), itemStack).apply {
                 pickupDelay = 999999
                 isGlowing = true
             }
@@ -81,11 +102,11 @@ data class Ore(
                 player.collectItem(droppedItem)
                 droppedItem.remove()
             }
-            val providedExp = digMetadata.providedExp
+            val providedExp = digMetadata.provideExp.random()
             if (providedExp <= 0) {
                 return@submit
             }
-            JustLevelAPI.addExp(player.uniqueId, providedExp)
+            JustLevelAPI.addExp(player.uniqueId, providedExp.toDouble())
         }
     }
 
@@ -114,6 +135,10 @@ data class Ore(
                         }
                     }
             }
+        }
+
+        private fun getDigTypes(pickaxeName: String): List<String> {
+            return KirraMiner.conf.getStringList("settings.pickaxe.$pickaxeName.dig-type")
         }
     }
 }

@@ -10,6 +10,9 @@ data class IntInterval(val min: Int, val max: Int) {
     companion object {
 
         fun fromString(str: String): IntInterval? {
+            if (str == "-1") {
+                return IntInterval(-1, -1)
+            }
             val split = str.splitIgnoreAllSpaces("-")
             if (split.size != 2) return null
             return IntInterval(split[0].toIntOrNull() ?: return null, split[1].toIntOrNull() ?: return null)

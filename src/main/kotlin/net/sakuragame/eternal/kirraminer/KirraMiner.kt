@@ -16,12 +16,4 @@ object KirraMiner : Plugin() {
     val plugin by lazy {
         BukkitPlugin.getInstance()
     }
-
-    override fun onEnable() {
-        KirraMinerAPI.recycleAllOres()
-    }
-
-    override fun onDisable() {
-        KirraMinerAPI.recycleAllOres()
-    }
 }

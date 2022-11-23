@@ -1,14 +1,21 @@
 package net.sakuragame.eternal.kirraminer.function
 
+import net.sakuragame.eternal.kirraminer.KirraMiner
 import net.sakuragame.eternal.kirraminer.KirraMinerAPI
-import net.sakuragame.eternal.kirraminer.getPickaxeLevel
+import net.sakuragame.eternal.kirraminer.getZaphkielName
 import org.bukkit.GameMode
 import org.bukkit.Material
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
+import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent
 
+@Suppress("DuplicatedCode")
 object FunctionDigListener {
+
+    private val pickaxes by lazy {
+        KirraMiner.conf.getConfigurationSection("settings.pickaxe")!!.getKeys(false)
+    }
 
     @SubscribeEvent
     fun e(e: PlayerItemHeldEvent) {
@@ -17,7 +24,7 @@ object FunctionDigListener {
             return
         }
         val item = player.inventory.getItem(e.newSlot)
-        val pickaxeHeld = getPickaxeLevel(item) != null
+        val pickaxeHeld = pickaxes.contains(item.getZaphkielName())
         when {
             player.gameMode == GameMode.ADVENTURE && pickaxeHeld -> player.gameMode = GameMode.SURVIVAL
             player.gameMode == GameMode.SURVIVAL && !pickaxeHeld -> player.gameMode = GameMode.ADVENTURE
@@ -30,12 +37,21 @@ object FunctionDigListener {
         val player = e.player
         val block = e.block
         val ore = KirraMinerAPI.getOreByLocation(block.location) ?: return
-        val pickaxeLevel = getPickaxeLevel(player) ?: return
-        if (ore.digMetadata.digLevel > pickaxeLevel) {
-            return
-        }
         e.isCancelled = true
         e.block.type = Material.AIR
-        ore.afterDig(player, player.inventory.itemInMainHand)
+        ore.afterDig(player, player.inventory.itemInMainHand, null)
+    }
+
+    @SubscribeEvent(EventPriority.LOWEST, ignoreCancelled = true)
+    fun e1(e: BlockBreakEvent) {
+        val player = e.player
+        val block = e.block
+        if (KirraMinerAPI.getOreByLocation(block.location) != null) {
+            return
+        }
+        val ore = FunctionDigSimulation.getOreFromBlockData(block) ?: return
+        e.isCancelled = true
+        e.block.type = Material.AIR
+        ore.afterDig(player, player.inventory.itemInMainHand, block.location, refresh = false)
     }
 }
